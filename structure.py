@@ -1,0 +1,177 @@
+import os
+import json
+
+def create_structure(items, base_path="."):
+    for item in items:
+        name = item.get("name")
+        type_ = item.get("type")
+        # Remove any trailing slash from directory names
+        name = name.rstrip("/") if type_ == "directory" else name
+        path = os.path.join(base_path, name)
+        
+        if type_ == "directory":
+            os.makedirs(path, exist_ok=True)
+            print(f"Created directory: {path}")
+            # Recursively create children if they exist
+            if "children" in item:
+                create_structure(item["children"], base_path=path)
+        elif type_ == "file":
+            # Create the file (empty content for now)
+            with open(path, "w") as f:
+                f.write("")  # or add default content here
+            print(f"Created file: {path}")
+
+# Assume you saved your JSON file structure in a variable called file_structure
+json_data = '''
+[
+  {
+    "phase": "Project Structure Plan",
+    "description": "Define the new directory and file structure for the refactored codebase.",
+    "structure": [
+      {
+        "name": "quoridor-project/",
+        "type": "directory",
+        "children": [
+          {
+            "name": "quoridor-core/",
+            "type": "directory",
+            "description": "Rust crate containing the core game logic, independent of WASM or CLI.",
+            "children": [
+              {"name": "Cargo.toml", "type": "file"},
+              {
+                "name": "src/",
+                "type": "directory",
+                "children": [
+                  {"name": "lib.rs", "type": "file", "description": "Main library file, exports core modules."},
+                  {"name": "game.rs", "type": "file", "description": "Contains the `Quoridor` struct and its implementation (board state, rules)."},
+                  {"name": "player.rs", "type": "file", "description": "Contains the `Player` enum."},
+                  {"name": "types.rs", "type": "file", "description": "Contains type aliases like `Coord`."},
+                  {"name": "utils.rs", "type": "file", "description": "Utility functions (coordinate conversion, etc.)."},
+                  {"name": "graph.rs", "type": "file", "description": "Graph-related logic (pathfinding, wall checks using graph)."},
+                  {"name": "openings.rs", "type": "file", "description": "Function to retrieve opening moves."},
+                  {
+                    "name": "strategy/",
+                    "type": "directory",
+                    "description": "Module for AI strategies.",
+                    "children": [
+                      {"name": "mod.rs", "type": "file", "description": "Declares strategy modules and the `Strategy` trait."},
+                      {"name": "base.rs", "type": "file", "description": "Optional: Base struct/common logic for strategies (like handling openings)."},
+                      {"name": "random.rs", "type": "file"},
+                      {"name": "shortest_path.rs", "type": "file"},
+                      {"name": "defensive.rs", "type": "file"},
+                      {"name": "balanced.rs", "type": "file"},
+                      {"name": "adaptive.rs", "type": "file"},
+                      {"name": "minimax.rs", "type": "file"},
+                      {"name": "mcts.rs", "type": "file", "description": "Includes MCTSNode struct and logic."},
+                      {"name": "mirror.rs", "type": "file"},
+                      {"name": "simulated_annealing.rs", "type": "file"}
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "quoridor-wasm/",
+            "type": "directory",
+            "description": "Rust crate for the WebAssembly bindings, depends on `quoridor-core`.",
+            "children": [
+              {"name": "Cargo.toml", "type": "file"},
+              {
+                "name": "src/",
+                "type": "directory",
+                "children": [
+                  {"name": "lib.rs", "type": "file", "description": "WASM entry point, defines the `QuoridorGame` wrapper and exports functions."},
+                  {"name": "utils.rs", "type": "file", "description": "WASM-specific utilities (logging, panic hook setup)."}
+                ]
+              }
+            ]
+          },
+          {
+            "name": "quoridor-cli/",
+            "type": "directory",
+            "description": "Rust crate for the command-line tournament runner, depends on `quoridor-core`.",
+            "children": [
+              {"name": "Cargo.toml", "type": "file"},
+              {
+                "name": "src/",
+                "type": "directory",
+                "children": [
+                  {"name": "main.rs", "type": "file", "description": "CLI entry point, contains tournament logic and CSV writing."}
+                ]
+              }
+            ]
+          },
+          {
+            "name": "web-ui/",
+            "type": "directory",
+            "description": "React frontend project.",
+            "children": [
+              {"name": "package.json", "type": "file"},
+              {"name": "vite.config.js", "type": "file", "description": "Or equivalent build tool config."},
+              {"name": "tailwind.config.js", "type": "file"},
+              {"name": "index.html", "type": "file"},
+              {
+                "name": "public/",
+                "type": "directory",
+                "description": "Static assets."
+              },
+              {
+                "name": "src/",
+                "type": "directory",
+                "children": [
+                  {"name": "main.jsx", "type": "file", "description": "React app entry point."},
+                  {"name": "App.jsx", "type": "file", "description": "Main application component."},
+                  {
+                    "name": "components/",
+                    "type": "directory",
+                    "children": [
+                      {"name": "QuoridorGame.jsx", "type": "file", "description": "Main component managing state and WASM interaction."},
+                      {"name": "QuoridorBoard.jsx", "type": "file", "description": "Component rendering the board."},
+                      {"name": "Controls.jsx", "type": "file", "description": "Component for game controls (start, reset, strategy selection)."},
+                      {"name": "History.jsx", "type": "file", "description": "Component to display move history."}
+                    ]
+                  },
+                  {
+                    "name": "hooks/",
+                    "type": "directory",
+                    "children": [
+                       {"name": "useQuoridorWasm.js", "type": "file", "description": "Custom hook to manage WASM loading and interaction."}
+                    ]
+                  },
+                  {"name": "index.css", "type": "file", "description": "Tailwind base styles."}
+                ]
+              },
+              {
+                 "name": "wasm-pkg/",
+                 "type": "directory",
+                 "description": "Directory where the built `quoridor-wasm` package is placed (or symlinked)."
+              }
+            ]
+          },
+          {"name": "Cargo.toml", "type": "file", "description": "Workspace Cargo.toml defining the member crates."},
+          {"name": "README.md", "type": "file"},
+          {"name": ".gitignore", "type": "file"},
+           {
+            "name": "analysis/",
+            "type": "directory",
+            "description": "Directory for Python analysis scripts.",
+            "children":[
+                 {"name": "analyze_tournament.py", "type": "file"}
+            ]
+           }
+        ]
+      }
+    ]
+  }
+]
+'''
+
+# Load the JSON data
+data = json.loads(json_data)
+
+# We assume the structure is contained in the first phase's "structure" key.
+project_structure = data[0]["structure"]
+
+# Create the directory and file structure starting from the current directory.
+create_structure(project_structure)

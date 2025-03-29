@@ -1,0 +1,51 @@
+# --- File: quoridor-project/quoridor-wasm/Cargo.toml ---
+
+[package]
+name = "quoridor-wasm"
+version = "0.1.0"
+edition = "2021"
+description = "WASM bindings for the Quoridor core library"
+license = "MIT OR Apache-2.0" # Match core license or remove
+
+[lib]
+crate-type = ["cdylib", "rlib"] # cdylib for WASM, rlib for Rust tests/integration
+
+[dependencies]
+# Dependency on the core game logic crate
+# The path points to the sibling directory within the workspace.
+quoridor-core = { path = "../quoridor-core" }
+
+# --- WASM Specific Dependencies ---
+wasm-bindgen = "0.2.87" # Use a specific recent version
+
+# For better panic messages in the browser console
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+
+# Allows calling JavaScript functions (like console.log)
+js-sys = "0.3.64" # Use a specific recent version
+
+
+# Required by `rand` when targeting WASM for secure random numbers
+getrandom = { version = "0.2", features = ["js"] }
+
+
+# Provides logging and other browser APIs
+[dependencies.web-sys]
+version = "0.3.64" # Use a specific recent version
+features = [
+  "console", # To enable console.log binding
+  # Add other features if needed, e.g., "Window", "Document", "HtmlElement"
+]
+
+# Optional: For async operations in WASM if needed later
+# wasm-bindgen-futures = "0.4.37"
+
+[features]
+# Feature to enable the panic hook, useful for debugging WASM builds
+default = ["dep:console_error_panic_hook"]
+
+[profile.release]
+# Tell `rustc` to optimize for small code size for WASM builds
+opt-level = 's' # 'z' is even smaller but potentially slower
+lto = true      # Enable Link Time Optimization

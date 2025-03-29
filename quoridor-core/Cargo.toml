@@ -1,0 +1,23 @@
+# --- File: quoridor-project/quoridor-core/Cargo.toml ---
+
+[package]
+name = "quoridor-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core logic for the Quoridor board game"
+license = "MIT OR Apache-2.0" # Choose a license or remove
+
+[lib]
+name = "quoridor_core" # The name used when importing (`use quoridor_core::...`)
+path = "src/lib.rs"
+
+[dependencies]
+# Graph library for board representation and pathfinding
+petgraph = "0.6.4" # Use a specific recent version
+
+# Random number generation for strategies like Random, MCTS, SA
+rand = "0.8.5"
+
+# Optional dependencies can be added here as needed
+# e.g., serde for serialization if you plan to save/load game states
+# serde = { version = "1.0", features = ["derive"], optional = true }

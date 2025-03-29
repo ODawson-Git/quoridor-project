@@ -1,0 +1,24 @@
+# --- File: quoridor-project/Cargo.toml ---
+
+# This file defines the root of the Cargo workspace.
+
+[workspace]
+
+# List the member crates that are part of this workspace.
+# These paths are relative to this Cargo.toml file.
+members = [
+    "quoridor-core",    # Core game logic crate
+    "quoridor-wasm",    # WASM bindings crate
+    "quoridor-cli",     # Command-line interface (tournament runner) crate
+]
+
+# Specify the resolver version for potentially better dependency resolution
+# and to ensure consistent behavior across different Cargo versions.
+resolver = "2"
+
+# Optional: Default settings for profiles can be defined here for all members.
+# For example, optimizing release builds:
+# [profile.release]
+# opt-level = 3
+# lto = true
+# codegen-units = 1 # Can potentially improve optimization but increases compile time
