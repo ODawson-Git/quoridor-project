@@ -71,24 +71,24 @@ export function useQuoridorWasm() {
    }, []);
 
    const resetWasmGame = useCallback(() => {
-        // Re-create instance for clean reset
-        if (!wasmModuleLoaded || typeof WasmQuoridor === 'undefined') {
-            console.error("resetWasmGame: WASM not ready");
-            return false;
-        }
-        try {
-             // You might want size/walls from existing state if available, or use constants
-             const size = gameInstanceRef.current ? JSON.parse(gameInstanceRef.current.getGameState()).size : 9;
-             const walls = 10;
-             gameInstanceRef.current = new WasmQuoridor(size, walls);
-             console.log("WASM game instance reset (recreated).");
-             return true;
-        } catch (err) {
-             console.error("Error recreating WASM game instance:", err);
-             setError(err);
-             return false;
-        }
-   }, [wasmModuleLoaded]); // Depend on module loaded
+    if (!wasmModuleLoaded || typeof WasmQuoridor === 'undefined') {
+      console.error("resetWasmGame: WASM not ready");
+      setError(new Error('WASM not ready')); // Set error state
+      return false;
+    }
+    try {
+      console.log("Recreating WASM game instance on reset (Simplified)...");
+      const size = 9; // Use constant BOARD_SIZE
+      const walls = 10; // Use constant INITIAL_WALLS
+      gameInstanceRef.current = new WasmQuoridor(size, walls); // Use imported constructor
+      console.log("WASM game instance recreated successfully.");
+      return true;
+    } catch (err) {
+      console.error("Error recreating WASM game instance:", err);
+      setError(err); // Set error state
+      return false;
+    }
+  }, [wasmModuleLoaded]);
 
    const getWasmLegalMoves = useCallback(() => {
         if (!gameInstanceRef.current) { console.error("getWasmLegalMoves: No game instance"); return { pawn: [], wall: [] }; }

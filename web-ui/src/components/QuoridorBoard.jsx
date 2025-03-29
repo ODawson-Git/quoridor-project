@@ -1,267 +1,290 @@
-// --- File: web-ui/src/components/QuoridorBoard.jsx ---
-import React, { useState, memo } from 'react';
+import React, { useState, useEffect } from 'react';
 
-// Memoize the component to prevent unnecessary re-renders if props haven't changed significantly
-const QuoridorBoard = memo(({
-  boardState,
-  onCellClick,
-  onWallClick,
-  nextPawnMoves,
+const QuoridorBoard = ({ 
+  boardState, 
+  onCellClick, 
+  onWallClick, 
+  nextPawnMoves, 
   nextWallMoves,
   player1Strategy,
   player2Strategy
 }) => {
   // State for showing ghost walls on hover
-  const [ghostWall, setGhostWall] = useState(null); // { type: 'h'/'v', row: r, col: c }
-
-  // Check if the current active player is human
-  const isHumanTurn = (
+  const [ghostWall, setGhostWall] = useState(null);
+  
+  // Current player can make a move
+  const canCurrentPlayerMove = (
     (boardState.activePlayer === 'player1' && player1Strategy === 'Human') ||
     (boardState.activePlayer === 'player2' && player2Strategy === 'Human')
   );
-
-  // --- Helper Functions ---
-
-  // Convert 0-based row/col to algebraic notation (e.g., 0,0 -> a9)
+  
+  // Convert to algebraic notation for display
   const toAlgebraicNotation = (row, col) => {
-    if (row === undefined || col === undefined) return '??';
-    const colLetter = String.fromCharCode(97 + col);
-    const rowNumber = boardState.size - row;
+    const colLetter = String.fromCharCode(97 + col); // 'a' is 0
+    const rowNumber = 9 - row; // Convert from array (0-8 from top) to algebraic (1-9 from bottom)
     return `${colLetter}${rowNumber}`;
   };
+  
+  // Get wall color based on wall position and move history
+  const getWallColor = (player) => {
+    if (player === 'player1') return 'bg-blue-500';
+    if (player === 'player2') return 'bg-red-500';
+    return 'bg-gray-600';
+  };
+  
+  // Find which player placed a specific wall - improved version
+  const getWallPlayer = (orientation, row, col) => {
+    // Convert to algebraic notation for matching against move history
+    const algebraicPosition = toAlgebraicNotation(row, col);
+    const wallNotation = `${algebraicPosition}${orientation}`;
+    
+    // Find the move in history matching this wall
+    const wallMove = boardState.moveHistory?.find(move => 
+      move.type === 'wall' && 
+      move.orientation === orientation &&
+      move.move.startsWith(algebraicPosition)
+    );
+    
+    // If found in history, return that player
+    if (wallMove) {
+      return wallMove.player;
+    }
+    
+    // Fallback color assignment based on position in move sequence
+    // This ensures walls always have a consistent color even if history matching fails
+    const index = [...boardState.hWalls, ...boardState.vWalls].indexOf(`${row},${col}`);
+    return index % 2 === 0 ? 'player1' : 'player2';
+  };
+  
+  // Check if a cell is a legal move
+  const isLegalMove = (row, col) => {
+    // Get current player position
+    const currentPos = boardState.activePlayer === 'player1' 
+      ? boardState.player1Pos 
+      : boardState.player2Pos;
+    
+    // Skip the current player's position as a legal move
+    if (row === currentPos.row && col === currentPos.col) {
+      return false;
+    }
+    
+    return nextPawnMoves.some(move => 
+      move.row === row && move.col === col
+    );
+  };
 
-  // Determine the CSS background color for a cell
+  // Check if a wall position is legal
+  const isLegalWall = (row, col, type) => {
+    return nextWallMoves[type].some(wall => 
+      wall.row === row && wall.col === col
+    );
+  };
+
+  // Get ghost wall color based on current player
+  const getGhostWallColor = () => {
+    return boardState.activePlayer === 'player1' ? 'bg-blue-400 bg-opacity-60' : 'bg-red-400 bg-opacity-60';
+  };
+
+  // Determine if a cell is in the target row (goal line)
+  const isTargetRow = (row, col) => {
+    // Player 1 (blue) target is row 0 (top row)
+    // Player 2 (red) target is row 8 (bottom row)
+    return row === 0 || row === 8;
+  };
+
+  // Get cell background color considering checkerboard pattern and highlighting
   const getCellBackgroundColor = (row, col) => {
-    if (row === 0) return 'bg-red-100 hover:bg-red-200'; // Player 2 goal line (P1 target)
-    if (row === boardState.size - 1) return 'bg-blue-100 hover:bg-blue-200'; // Player 1 goal line (P2 target)
-    return (row + col) % 2 === 0 ? 'bg-gray-50 hover:bg-gray-100' : 'bg-white hover:bg-gray-100';
+    // Target row highlighting
+    if (row === 0) return 'bg-red-100'; // Player 2's target (top row)
+    if (row === 8) return 'bg-blue-100'; // Player 1's target (bottom row)
+    
+    // Checkerboard pattern for the rest of the board
+    return (row + col) % 2 === 0 ? 'bg-gray-50' : 'bg-white';
   };
-
-  // Check if a coordinate represents a legal pawn move for the active player
-  const isLegalPawnMove = (row, col) => {
-      if (!isHumanTurn) return false; // Don't highlight if not human's turn
-      // Ensure nextPawnMoves is an array before using `some`
-      return Array.isArray(nextPawnMoves) && nextPawnMoves.some(move => move.row === row && move.col === col);
-  };
-
-  // Check if a wall placement slot is legal for the active player
-  const isLegalWallPlacement = (row, col, orientation) => {
-      if (!isHumanTurn) return false;
-      const wallsAvailable = boardState.activePlayer === 'player1' ? boardState.player1Walls : boardState.player2Walls;
-      if (wallsAvailable <= 0) return false; // No walls left
-
-      const legalSlots = nextWallMoves[orientation];
-      // Ensure legalSlots is an array
-      return Array.isArray(legalSlots) && legalSlots.some(wall => wall.row === row && wall.col === col);
-  };
-
-  // Get the color for a placed wall based on move history
-  const getWallOwner = (row, col, orientation) => {
-      const wallKey = `${row},${col}`;
-      const wallExists = orientation === 'h' ? boardState.hWalls.has(wallKey) : boardState.vWalls.has(wallKey);
-      if (!wallExists) return null; // No wall here
-
-      // Find the move in history that placed this specific wall
-      // Need to convert back to algebraic for reliable history check
-       const algebraicPos = toAlgebraicNotation(row, col);
-       const fullWallNotation = `${algebraicPos}${orientation}`;
-
-      const wallMove = boardState.moveHistory?.find(move => move.move === fullWallNotation && move.type === 'wall');
-
-      return wallMove ? wallMove.player : null; // Return player or null if not found
-  };
-
-  const getWallColor = (owner) => {
-      if (owner === 'player1') return 'bg-blue-500 border-blue-700';
-      if (owner === 'player2') return 'bg-red-500 border-red-700';
-      return 'bg-gray-400 border-gray-600'; // Fallback/Error color
-  };
-
-
-  // --- Render Logic ---
 
   return (
-    // Container with relative positioning for walls
-    <div className="relative w-[540px] h-[540px] bg-stone-200 border-4 border-stone-600 shadow-lg rounded-md p-2 box-content">
-
-      {/* Grid for Cells */}
-      <div className={`grid grid-cols-${boardState.size} grid-rows-${boardState.size} w-full h-full gap-1`}>
-        {Array.from({ length: boardState.size }).map((_, row) =>
-          Array.from({ length: boardState.size }).map((_, col) => {
-            const isP1 = boardState.player1Pos.row === row && boardState.player1Pos.col === col;
-            const isP2 = boardState.player2Pos.row === row && boardState.player2Pos.col === col;
-            const isLegalMove = isLegalPawnMove(row, col);
-            const cellId = `cell-${row}-${col}`;
-            const cellAlg = toAlgebraicNotation(row, col);
-
+    <div className="relative w-[540px] h-[540px] bg-white border border-gray-300 rounded-lg shadow-xl overflow-hidden">
+      {/* Top target line (Player 1's goal) */}
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-red-500 z-20"></div>
+      
+      {/* Bottom target line (Player 2's goal) */}
+      <div className="absolute bottom-0 left-0 w-full h-1.5 bg-blue-500 z-20"></div>
+      
+      {/* Main grid - cells */}
+      <div className="grid grid-cols-9 grid-rows-9 w-full h-full">
+        {Array(9).fill(0).map((_, row) => (
+          Array(9).fill(0).map((_, col) => {
+            const isPlayer1 = boardState.player1Pos.row === row && boardState.player1Pos.col === col;
+            const isPlayer2 = boardState.player2Pos.row === row && boardState.player2Pos.col === col;
+            const cellIsLegalMove = isLegalMove(row, col);
+            const cellNotation = toAlgebraicNotation(row, col);
+            
+            // Determine if this cell is on the edge (for styling)
+            const isEdgeCell = row === 0 || row === 8 || col === 0 || col === 8;
+            
             return (
-              <div
-                key={cellId}
-                id={cellId}
+              <div 
+                key={`cell-${row}-${col}`} 
                 className={`
-                  relative flex items-center justify-center rounded
+                  relative flex items-center justify-center
                   ${getCellBackgroundColor(row, col)}
+                  ${cellIsLegalMove && canCurrentPlayerMove ? 'bg-green-100 cursor-pointer hover:bg-green-200' : ''}
+                  ${isPlayer1 || isPlayer2 ? 'bg-gray-200' : ''}
+                  ${isEdgeCell ? 'border border-gray-300' : 'border border-gray-200'}
                   transition-colors duration-150
-                  ${isLegalMove ? 'cursor-pointer ring-2 ring-green-500 ring-inset' : ''}
-                  ${!isHumanTurn && !isP1 && !isP2 ? 'cursor-default' : ''}
-                  ${isHumanTurn && !isLegalMove && !isP1 && !isP2 ? 'cursor-not-allowed' : ''}
                 `}
-                onClick={() => isLegalMove && onCellClick(row, col)}
-                title={cellAlg} // Tooltip with algebraic notation
+                onClick={() => {
+                  if (canCurrentPlayerMove && cellIsLegalMove) {
+                    onCellClick(row, col);
+                  }
+                }}
               >
-                {/* Pawns */}
-                {isP1 && (
-                  <div className="absolute h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 z-20 shadow-lg border-2 border-white flex items-center justify-center text-white font-bold text-lg select-none">
+                {isPlayer1 && (
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 z-10 shadow-lg border-2 border-blue-300 flex items-center justify-center text-white font-bold">
                     1
                   </div>
                 )}
-                {isP2 && (
-                  <div className="absolute h-10 w-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 z-20 shadow-lg border-2 border-white flex items-center justify-center text-white font-bold text-lg select-none">
+                {isPlayer2 && (
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 z-10 shadow-lg border-2 border-red-300 flex items-center justify-center text-white font-bold">
                     2
                   </div>
                 )}
-
-                {/* Legal Move Indicator (only if human turn and legal) */}
-                {isLegalMove && (
-                  <div className={`absolute h-3 w-3 rounded-full ${boardState.activePlayer === 'player1' ? 'bg-blue-300' : 'bg-red-300'} opacity-80 z-10 pointer-events-none`}></div>
+                
+                <div className="absolute text-xs text-gray-500 left-1 top-1 pointer-events-none">
+                  {cellNotation}
+                </div>
+                
+                {/* Visual indicator for legal moves */}
+                {cellIsLegalMove && canCurrentPlayerMove && !isPlayer1 && !isPlayer2 && (
+                  <div className={`h-3 w-3 rounded-full ${boardState.activePlayer === 'player1' ? 'bg-blue-500' : 'bg-red-500'} opacity-70`}></div>
                 )}
-
-                 {/* Optional: Cell notation for debugging */}
-                 {/* <span className="absolute bottom-0 right-1 text-gray-400 text-[8px] pointer-events-none">{cellAlg}</span> */}
               </div>
             );
           })
-        )}
+        ))}
       </div>
-
-      {/* Layer for Horizontal Walls and Placement Areas */}
-      <div className="absolute inset-0 pointer-events-none">
-        {Array.from({ length: boardState.size - 1 }).map((_, row) => // 8 rows of wall slots
-          Array.from({ length: boardState.size - 1 }).map((_, col) => { // 8 cols of wall slots
-            // Wall placement coordinate (bottom-left reference square)
-            const wallRefRow = row + 1;
-            const wallRefCol = col;
-            const wallCoordKey = `${wallRefRow},${wallRefCol}`; // Key for checking placed walls
-            const isPlaced = boardState.hWalls.has(wallCoordKey);
-            const isLegal = isLegalWallPlacement(wallRefRow, wallRefCol, 'h');
-            const owner = isPlaced ? getWallOwner(wallRefRow, wallRefCol, 'h') : null;
-
-            // Ghost wall logic
-             const showGhost = isHumanTurn && !isPlaced && ghostWall &&
-                             ghostWall.type === 'h' &&
-                             ghostWall.row === wallRefRow &&
-                              // Ghost covers two columns
-                             (ghostWall.col === wallRefCol || ghostWall.col === wallRefCol -1);
-
-
+      
+      {/* Horizontal wall areas - appear between rows */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+        {Array(8).fill(0).map((_, row) => (
+          Array(8).fill(0).map((_, col) => {
+            // For horizontal walls, the reference point is the cell below the wall
+            const wallRow = row + 1;
+            const wallCol = col;
+            const wallCoord = `${wallRow},${wallCol}`;
+            const wallExists = boardState.hWalls.has(wallCoord);
+            const wallIsLegal = isLegalWall(wallRow, wallCol, 'h');
+            const showGhost = ghostWall && 
+                            ghostWall.type === 'h' && 
+                            ghostWall.row === wallRow && 
+                            ghostWall.col === wallCol;
+            
             return (
-              // Clickable area for placing horizontal walls
-              <div
-                key={`hwall-area-${row}-${col}`}
-                className={`absolute z-10 pointer-events-auto
-                            ${isHumanTurn && isLegal && !isPlaced ? 'cursor-pointer group' : ''}
-                            ${isHumanTurn && !isLegal && !isPlaced ? 'cursor-not-allowed' : ''}
-                           `}
+              <div 
+                key={`hwall-${row}-${col}`}
+                className={`
+                  absolute pointer-events-auto z-10
+                  ${wallIsLegal && canCurrentPlayerMove ? 'cursor-pointer' : ''}
+                  ${wallIsLegal && canCurrentPlayerMove && !wallExists && !showGhost ? 'hover:bg-gray-200 hover:bg-opacity-50 rounded-full' : ''}
+                `}
                 style={{
-                  // Position the center of the clickable area slightly above the grid line
-                  top: `calc(${(row + 1) * (100 / boardState.size)}% - 6px)`, // 12px height / 2
-                  left: `calc(${col * (100 / boardState.size)}% + (100 / ${boardState.size} / 2)%)`, // Center between cells horizontally
-                  width: `calc(${(100 / boardState.size)}% * 1)`, // Span one cell width for clicking
-                  height: '12px', // Clickable height
+                  top: `${(row + 1) * (100 / 9)}%`,
+                  left: `${col * (100 / 9)}%`,
+                  width: `${(100 / 9) * 2}%`,
+                  height: '12px',
+                  transform: 'translateY(-50%)'
                 }}
-                onMouseEnter={() => isLegal && !isPlaced && setGhostWall({ type: 'h', row: wallRefRow, col: wallRefCol })}
-                onMouseLeave={() => setGhostWall(null)}
                 onClick={(e) => {
-                    e.stopPropagation(); // Prevent clicks falling through to cells
-                    if (isHumanTurn && isLegal && !isPlaced) {
-                        onWallClick(wallRefRow, wallRefCol, 'h');
-                    }
+                  e.stopPropagation();
+                  if (canCurrentPlayerMove && wallIsLegal) {
+                    onWallClick(wallRow, wallCol, 'h');
+                  }
                 }}
+                onMouseEnter={() => {
+                  if (canCurrentPlayerMove && wallIsLegal) {
+                    setGhostWall({ type: 'h', row: wallRow, col: wallCol });
+                  }
+                }}
+                onMouseLeave={() => setGhostWall(null)}
               >
-                {/* Visual representation of placed wall or ghost wall */}
-                {(isPlaced || showGhost) && (
-                    <div
-                        className={`absolute top-0 left-0 w-[calc(100%*2+4px)] h-2.5 rounded-full border shadow-md
-                                    ${isPlaced ? getWallColor(owner) : 'bg-gray-400 bg-opacity-40 border-gray-500'}
-                                   `}
-                         // Wall spans 2 cells + the gap (adjust width slightly using calc)
-                         // Left offset might need slight adjustment depending on gap/border size
-                        style={{ transform: 'translateX(calc(-100%/4 - 1px))' }} // Center the visual wall over the gap
-                    ></div>
+                {(wallExists || showGhost) && (
+                  <div 
+                    className={`
+                      absolute top-1/2 left-0 w-full h-4 -translate-y-1/2 shadow-md
+                      ${wallExists 
+                        ? getWallColor(getWallPlayer('h', wallRow, wallCol)) 
+                        : getGhostWallColor()}
+                      rounded-full
+                    `}
+                  />
                 )}
-                 {/* Optional: Legal placement indicator */}
-                 {isLegal && !isPlaced && !showGhost && (
-                     <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-green-400 rounded-full opacity-0 group-hover:opacity-50 transform -translate-x-1/2 -translate-y-1/2 transition-opacity"></div>
-                 )}
               </div>
             );
           })
-        )}
+        ))}
       </div>
-
-      {/* Layer for Vertical Walls and Placement Areas */}
-       <div className="absolute inset-0 pointer-events-none">
-           {Array.from({ length: boardState.size - 1 }).map((_, row) => // 8 rows of wall slots
-               Array.from({ length: boardState.size - 1 }).map((_, col) => { // 8 cols of wall slots
-                   const wallRefRow = row + 1; // Reference row (bottom-left)
-                   const wallRefCol = col;     // Reference col (bottom-left)
-                   const wallCoordKey = `${wallRefRow},${wallRefCol}`;
-                   const isPlaced = boardState.vWalls.has(wallCoordKey);
-                   const isLegal = isLegalWallPlacement(wallRefRow, wallRefCol, 'v');
-                   const owner = isPlaced ? getWallOwner(wallRefRow, wallRefCol, 'v') : null;
-
-                    // Ghost wall logic
-                    const showGhost = isHumanTurn && !isPlaced && ghostWall &&
-                                    ghostWall.type === 'v' &&
-                                    ghostWall.col === wallRefCol &&
-                                    // Ghost covers two rows
-                                    (ghostWall.row === wallRefRow || ghostWall.row === wallRefRow - 1);
-
-
-                   return (
-                       <div
-                           key={`vwall-area-${row}-${col}`}
-                           className={`absolute z-10 pointer-events-auto
-                                       ${isHumanTurn && isLegal && !isPlaced ? 'cursor-pointer group' : ''}
-                                        ${isHumanTurn && !isLegal && !isPlaced ? 'cursor-not-allowed' : ''}
-                                       `}
-                           style={{
-                               // Position the center of the clickable area slightly left of the grid line
-                                top: `calc(${row * (100 / boardState.size)}% + (100 / ${boardState.size} / 2)%)`, // Center between cells vertically
-                                left: `calc(${(col + 1) * (100 / boardState.size)}% - 6px)`, // 12px width / 2
-                                height: `calc(${(100 / boardState.size)}% * 1)`, // Span one cell height for clicking
-                                width: '12px', // Clickable width
-                           }}
-                           onMouseEnter={() => isLegal && !isPlaced && setGhostWall({ type: 'v', row: wallRefRow, col: wallRefCol })}
-                           onMouseLeave={() => setGhostWall(null)}
-                           onClick={(e) => {
-                               e.stopPropagation();
-                               if (isHumanTurn && isLegal && !isPlaced) {
-                                   onWallClick(wallRefRow, wallRefCol, 'v');
-                               }
-                           }}
-                       >
-                           {(isPlaced || showGhost) && (
-                               <div
-                                   className={`absolute top-0 left-0 h-[calc(100%*2+4px)] w-2.5 rounded-full border shadow-md
-                                                ${isPlaced ? getWallColor(owner) : 'bg-gray-400 bg-opacity-40 border-gray-500'}
-                                               `}
-                                    // Wall spans 2 cells + the gap
-                                   style={{ transform: 'translateY(calc(-100%/4 - 1px))' }} // Center the visual wall over the gap
-                               ></div>
-                           )}
-                            {/* Optional: Legal placement indicator */}
-                            {isLegal && !isPlaced && !showGhost && (
-                                <div className="absolute top-1/2 left-1/2 w-2 h-2 bg-green-400 rounded-full opacity-0 group-hover:opacity-50 transform -translate-x-1/2 -translate-y-1/2 transition-opacity"></div>
-                            )}
-                       </div>
-                   );
-               })
-           )}
-       </div>
-
+      
+      {/* Vertical wall areas - appear between columns */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+        {Array(8).fill(0).map((_, row) => (
+          Array(8).fill(0).map((_, col) => {
+            // For vertical walls, the reference point is the cell to the right of the wall
+            const wallRow = row + 1;
+            const wallCol = col;
+            const wallCoord = `${wallRow},${wallCol}`;
+            const wallExists = boardState.vWalls.has(wallCoord);
+            const wallIsLegal = isLegalWall(wallRow, wallCol, 'v');
+            const showGhost = ghostWall && 
+                            ghostWall.type === 'v' && 
+                            ghostWall.row === wallRow && 
+                            ghostWall.col === wallCol;
+            
+            return (
+              <div 
+                key={`vwall-${row}-${col}`}
+                className={`
+                  absolute pointer-events-auto z-10
+                  ${wallIsLegal && canCurrentPlayerMove ? 'cursor-pointer' : ''}
+                  ${wallIsLegal && canCurrentPlayerMove && !wallExists && !showGhost ? 'hover:bg-gray-200 hover:bg-opacity-50 rounded-full' : ''}
+                `}
+                style={{
+                  top: `${row * (100 / 9)}%`,
+                  left: `${(col + 1) * (100 / 9)}%`,
+                  height: `${(100 / 9) * 2}%`,
+                  width: '12px',
+                  transform: 'translateX(-50%)'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (canCurrentPlayerMove && wallIsLegal) {
+                    onWallClick(wallRow, wallCol, 'v');
+                  }
+                }}
+                onMouseEnter={() => {
+                  if (canCurrentPlayerMove && wallIsLegal) {
+                    setGhostWall({ type: 'v', row: wallRow, col: wallCol });
+                  }
+                }}
+                onMouseLeave={() => setGhostWall(null)}
+              >
+                {(wallExists || showGhost) && (
+                  <div 
+                    className={`
+                      absolute top-0 left-1/2 h-full w-4 -translate-x-1/2 shadow-md
+                      ${wallExists 
+                        ? getWallColor(getWallPlayer('v', wallRow, wallCol)) 
+                        : getGhostWallColor()}
+                      rounded-full
+                    `}
+                  />
+                )}
+              </div>
+            );
+          })
+        ))}
+      </div>
     </div>
   );
-}); // Wrap with memo
+};
 
 export default QuoridorBoard;
