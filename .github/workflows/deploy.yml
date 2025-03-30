@@ -1,0 +1,51 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Build Rust WASM package
+        run: |
+          cd quoridor-wasm
+          wasm-pack build --target web
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '19'
+          cache: 'npm'
+          cache-dependency-path: 'web-ui/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd web-ui
+          npm install
+
+      - name: Build React app
+        run: |
+          cd web-ui
+          npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: web-ui/dist
+          branch: gh-pages
