@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/q.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Dynamically inject the base URL -->
+    <script>
+      document.write('<base href="' + (window.location.pathname.split('/').slice(0, -1).join('/') || '.') + '/">');
+    </script>
     <title>Quoridor AI Arena</title>
   </head>
   <body>
