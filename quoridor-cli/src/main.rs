@@ -15,6 +15,7 @@ use std::env;
 
 use csv::Writer;
 use rand::prelude::*;
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
 // --- Tournament Structures ---
 
@@ -95,13 +96,13 @@ impl Tournament {
                     time_limit_secs = Some(seconds);
                     // Use the tournament's default simulation count when time limit is primary
                     simulations = self.mcts_simulations;
-                    println!("Creating MCTS strategy with time limit {}s (sim limit: {})", seconds, simulations);
+                    //println!("Creating MCTS strategy with time limit {}s (sim limit: {})", seconds, simulations);
                  } else {
                     let sim_str = s.trim_start_matches("MCTS").replace("k", "000");
                     simulations = sim_str.parse::<usize>().unwrap_or(self.mcts_simulations);
                     // Use tournament's time limit if set globally
                     time_limit_secs = self.mcts_time_limit_secs;
-                    println!("Creating MCTS strategy with simulation limit {} (time limit: {:?})", simulations, time_limit_secs);
+                    //println!("Creating MCTS strategy with simulation limit {} (time limit: {:?})", simulations, time_limit_secs);
                  }
 
                  // Create the MCTS strategy instance
@@ -112,7 +113,7 @@ impl Tournament {
                     // This requires MCTSStrategy to have a method like `with_time_limit`
                     // For now, we'll assume the simulation count is the primary driver in CLI
                     // or we modify MCTSStrategy later.
-                     println!("Note: Time limit {}s requested, but CLI primarily uses simulation count for MCTS.", seconds);
+                    //println!("Note: Time limit {}s requested, but CLI primarily uses simulation count for MCTS.", seconds);
                     // If MCTSStrategy has `with_time_limit`:
                     // mcts_strategy = mcts_strategy.with_time_limit(seconds);
                  }
@@ -241,6 +242,68 @@ impl Tournament {
         }
     }
 
+    /// Prints detailed tournament configuration information
+    fn print_tournament_config(strategy_names: &[&str], opening_names: &[&str], display: bool) {
+        println!("\n--- Tournament Configuration Details ---");
+        
+        // Print strategies with their variants
+        println!("\nStrategies in tournament:");
+        for strat in strategy_names {
+            match *strat {
+                s if s.starts_with("Minimax") => {
+                    let depth_str = s.trim_start_matches("Minimax");
+                    let depth = depth_str.parse::<usize>().unwrap_or(1);
+                    println!("  - {} (depth: {})", s, depth);
+                },
+                s if s.starts_with("MCTS") => {
+                    if s.ends_with("sec") {
+                        let time_str = s.trim_start_matches("MCTS").trim_end_matches("sec");
+                        let seconds = time_str.parse::<f64>().unwrap_or(1.0);
+                        println!("  - {} (time limit: {} seconds)", s, seconds);
+                    } else if s.contains('k') {
+                        let sim_str = s.trim_start_matches("MCTS").replace("k", "000");
+                        let simulations = sim_str.parse::<usize>().unwrap_or(10000);
+                        println!("  - {} (simulations: {})", s, simulations);
+                    } else {
+                        println!("  - {} (default configuration)", s);
+                    }
+                },
+                s if s.starts_with("SimulatedAnnealing") => {
+                    let factor_str = s.trim_start_matches("SimulatedAnnealing");
+                    let factor = factor_str.parse::<f64>().unwrap_or(1.0);
+                    println!("  - {} (temperature factor: {})", s, factor);
+                },
+                s if s == "Defensive" => {
+                    println!("  - {} (wall preference: 0.7)", s);
+                },
+                s if s == "Balanced" => {
+                    println!("  - {} (defense weight: 0.5)", s);
+                },
+                _ => println!("  - {}", strat)
+            }
+        }
+        
+        // Print openings
+        println!("\nOpenings in tournament:");
+        for opening in opening_names {
+            println!("  - {}", opening);
+        }
+        
+        // Print match calculation
+        let total_matches = strategy_names.len() * (strategy_names.len() - 1) / 2 * opening_names.len();
+        println!("\nMatchups: {} strategies × {} openings = {} unique matchups", 
+                strategy_names.len() * (strategy_names.len() - 1) / 2, 
+                opening_names.len(), 
+                total_matches);
+        
+        if display {
+            println!("Verbose output: Enabled (showing move details)");
+        } else {
+            println!("Verbose output: Disabled (summary only)");
+        }
+        
+        println!("-------------------------------------\n");
+    }
 
     /// Runs the full tournament, distributing matches across threads.
     pub fn run_tournament_parallel(&mut self, display: bool) {
@@ -263,14 +326,11 @@ impl Tournament {
             "Mirror",
             "SimulatedAnnealing0.5", // From paper's experiments
             "SimulatedAnnealing1.0",
-            "SimulatedAnnealing2.0",
             "Minimax1", // Low depth for speed
             "Minimax2", // Reference depth from paper
-            "Minimax3", // Higher depth
-             // MCTS (adjust simulation counts/time as needed)
-             "MCTS10k",
-             "MCTS60k", // From paper's experiments
-             "MCTS1sec", // Time-based example
+            // MCTS (adjust simulation counts/time as needed)
+            "MCTS5sec",
+            "MCTS1sec", // 60k in paper's experiments
         ];
 
         let opening_names = vec![
@@ -282,6 +342,8 @@ impl Tournament {
         ];
         // --- End Configuration ---
 
+        // Print detailed configuration
+        Tournament::print_tournament_config(&strategy_names, &opening_names, display);
 
         let mut match_configs = Vec::new();
         for opening_name in &opening_names {
@@ -304,20 +366,65 @@ impl Tournament {
         let num_threads = thread::available_parallelism().map_or(4, |n| n.get());
         println!("Using {} threads.", num_threads);
 
+        // --- Create progress bars ---
+        let multi_progress = MultiProgress::new();
+        
+        // Main progress bar for overall tournament
+        let total_games = total_matches * self.games_per_match;
+        let main_progress_style = ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:50.cyan/blue} {pos}/{len} ({percent}%) - ETA: {eta}")
+            .expect("Progress bar template error")
+            .progress_chars("##-");
+        
+        let main_pb = multi_progress.add(ProgressBar::new(total_games as u64));
+        main_pb.set_style(main_progress_style);
+        main_pb.set_message("Total tournament progress");
+        
+        // Thread progress style
+        let thread_style = ProgressStyle::default_bar()
+            .template("[{elapsed_precise}] {bar:40.green/white} {pos}/{len} - Thread {msg}")
+            .expect("Progress bar template error")
+            .progress_chars("=>-");
+        
+        // Create progress bars for each thread
+        let thread_pbs: Vec<ProgressBar> = (0..num_threads)
+            .map(|id| {
+                let pb = multi_progress.add(ProgressBar::new(0));
+                pb.set_style(thread_style.clone());
+                pb.set_message(format!("#{}", id));
+                pb
+            })
+            .collect();
+        
         let results = Arc::new(Mutex::new(Vec::with_capacity(total_matches)));
         let mut handles = Vec::new();
         let configs_per_thread = (total_matches + num_threads - 1) / num_threads;
 
-        // Create a read-only Arc of the Tournament config to share with threads
-        let tournament_config = Arc::new(Tournament::new(self.board_size, self.walls, self.games_per_match)
-            .set_mcts_simulations(self.mcts_simulations) // Pass config through
-            .set_mcts_time_limit(self.mcts_time_limit_secs.unwrap_or(0.0))); // Pass config through
+        // Extract values from self to use in threads
+        let board_size = self.board_size;
+        let walls = self.walls;
+        let games_per_match = self.games_per_match;
+        let mcts_simulations = self.mcts_simulations;
+        let mcts_time_limit_secs = self.mcts_time_limit_secs;
 
+        // Create a read-only Arc of the Tournament config to share with threads
+        let tournament_config = Arc::new(Tournament::new(board_size, walls, games_per_match)
+            .set_mcts_simulations(mcts_simulations)
+            .set_mcts_time_limit(mcts_time_limit_secs.unwrap_or(0.0)));
+
+        // Create a clone of the main progress bar for threads to update
+        let main_pb = Arc::new(main_pb);
 
         for (thread_id, chunk) in match_configs.chunks(configs_per_thread).enumerate() {
             let thread_chunk = chunk.to_vec(); // Clone chunk for the thread
             let results_clone = Arc::clone(&results);
-            let config_clone = Arc::clone(&tournament_config); // Clone Arc, not Tournament
+            let config_clone = Arc::clone(&tournament_config);
+            let main_pb_clone = Arc::clone(&main_pb);
+            let thread_pb = thread_pbs[thread_id].clone();
+            let thread_games_per_match = games_per_match; // Clone for this thread
+            
+            // Set the length of this thread's progress bar
+            thread_pb.set_length((thread_chunk.len() * thread_games_per_match) as u64);
 
             let handle = thread::spawn(move || {
                 let thread_start = Instant::now();
@@ -325,31 +432,55 @@ impl Tournament {
                 if display { println!("[Thread {}] Starting {} matches...", thread_id, thread_chunk.len()); }
 
                 for (s1, s2, opening, disp) in thread_chunk {
+                    // Update thread progress bar message to show current match
+                    thread_pb.set_message(format!("#{} - {} vs {} ({})", 
+                                            thread_id, s1, s2, opening));
+                    
                     // Use the cloned config to run the match
                     let result = config_clone.run_match(&s1, &s2, &opening, disp);
                     thread_results.push(result);
+                    
+                    // Update progress bars (games_per_match games were completed)
+                    thread_pb.inc(thread_games_per_match as u64);
+                    main_pb_clone.inc(thread_games_per_match as u64);
                 }
 
-                 // Lock mutex once to add all results for this thread
-                 let mut shared_results_guard = results_clone.lock().unwrap();
-                 shared_results_guard.extend(thread_results);
+                // Lock mutex once to add all results for this thread
+                let mut shared_results_guard = results_clone.lock().unwrap();
+                shared_results_guard.extend(thread_results);
 
                 if display { println!("[Thread {}] Finished in {:?}", thread_id, thread_start.elapsed()); }
+                
+                // Mark this thread's progress bar as finished
+                thread_pb.finish_with_message(format!("#{} - Complete", thread_id));
             });
             handles.push(handle);
         }
 
+        // We don't need a separate thread for the progress bars
+        // The MultiProgress struct will handle the rendering automatically
+        // Just make sure it stays in scope until all threads complete
+
         // Wait for all threads
         for (i, handle) in handles.into_iter().enumerate() {
-             if display { println!("Waiting for thread {}...", i); }
-             handle.join().expect("Thread panicked");
+            if display { println!("Waiting for thread {}...", i); }
+            handle.join().expect("Thread panicked");
+        }
+
+        // Finish all progress bars
+        main_pb.finish_with_message("Tournament complete!");
+        for pb in thread_pbs {
+            if !pb.is_finished() {
+                pb.finish_and_clear();
+            }
         }
 
         // Collect results
-        // Use Arc::try_unwrap only if you are sure this is the last Arc reference
-        // Otherwise, just lock and clone the data.
         let final_results = results.lock().unwrap().clone();
         self.results = final_results; // Store results back into the main tournament instance
+
+        // Drop the multi_progress object to clean up terminal output
+        drop(multi_progress);
 
         println!(
             "Tournament finished {} matches in {:.2?}.",
@@ -441,7 +572,7 @@ fn main() {
     let mut tournament = Tournament::new(
         9,   // board size (standard)
         10,  // walls per player (standard)
-        50, // Number of games per matchup (e.g., 50 games, 25 starting each side)
+        8, // Number of games per matchup (e.g., 50 games, 25 starting each side)
     );
 
     // Optional: Configure MCTS parameters if needed globally

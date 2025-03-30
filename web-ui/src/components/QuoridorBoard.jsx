@@ -128,7 +128,7 @@ const QuoridorBoard = ({
                 className={`
                   relative flex items-center justify-center
                   ${getCellBackgroundColor(row, col)}
-                  ${cellIsLegalMove && canCurrentPlayerMove ? 'bg-green-100 cursor-pointer hover:bg-green-200' : ''}
+                  ${cellIsLegalMove && canCurrentPlayerMove ? 'cursor-pointer hover:bg-green-200' : ''}
                   ${isPlayer1 || isPlayer2 ? 'bg-gray-200' : ''}
                   ${isEdgeCell ? 'border border-gray-300' : 'border border-gray-200'}
                   transition-colors duration-150
