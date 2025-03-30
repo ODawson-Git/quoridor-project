@@ -61,6 +61,15 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v3
         
+      # Add this step to explicitly include upload-artifact before using upload-pages-artifact
+      - name: Setup upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: dummy-artifact
+          path: ./web-ui/dist/index.html
+          retention-days: 1
+          if-no-files-found: warn
+          
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
