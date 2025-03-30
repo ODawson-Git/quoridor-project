@@ -4,7 +4,7 @@ import { resolve } from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  // Make sure this exactly matches your repository name
+  // Add base path - use the name of your repository
   base: '/quoridor-game/',
   server: {
     fs: {
@@ -16,15 +16,13 @@ export default defineConfig({
       '@wasm': resolve(__dirname, '../quoridor-wasm/pkg')
     }
   },
+  // Ensure Vite correctly handles WASM files
+  optimizeDeps: {
+    exclude: ['@wasm/quoridor_wasm.js']
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,
-    sourcemap: true,
-    assetsDir: 'assets',
-    rollupOptions: {
-      output: {
-        manualChunks: undefined
-      }
-    }
+    sourcemap: true
   }
 })
