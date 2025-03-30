@@ -4,7 +4,7 @@ import React from 'react';
 // Define STRATEGIES and OPENINGS constants if not passed as props or imported
 const STRATEGIES = [
     'Human', 'Random', 'ShortestPath', 'Defensive', 'Balanced', 'Adaptive',
-    'Minimax1', 'Minimax2', 'Mirror', "MCTS10k", "MCTS60k", "MCTS1sec",
+    'Minimax1', 'Minimax2', 'Mirror', "MCTS1k",
     "SimulatedAnnealing0.5", "SimulatedAnnealing1.0", "SimulatedAnnealing2.0" // Added SA
 ];
 const OPENINGS = [

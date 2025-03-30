@@ -22,7 +22,7 @@ const Player = {
 // Strategy names - Define locally or import
 const STRATEGIES = [
     'Human', 'Random', 'ShortestPath', 'Defensive', 'Balanced', 'Adaptive',
-    'Minimax1', 'Minimax2', 'Mirror', "MCTS10k", "MCTS60k", "MCTS1sec", // Example MCTS
+    'Minimax1', 'Minimax2', 'Mirror', "MCTS1k", // Example MCTS
     "SimulatedAnnealing0.5", "SimulatedAnnealing1.0", "SimulatedAnnealing2.0" // Example SA
 ];
 // Opening names - Define locally or import
