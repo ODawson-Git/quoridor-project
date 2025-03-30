@@ -5,6 +5,7 @@ use quoridor_core::{Quoridor, Player, Strategy, Coord}; // Add more imports as n
 use quoridor_core::strategy::{ self, RandomStrategy, ShortestPathStrategy, MCTSStrategy, MinimaxStrategy, DefensiveStrategy, AdaptiveStrategy, BalancedStrategy, MirrorStrategy, SimulatedAnnealingStrategy}; // Example strategy imports
 use quoridor_core::openings; // Import the openings module
 use web_sys::js_sys;
+use std::panic;
 
 // Import wasm-bindgen essentials
 use wasm_bindgen::prelude::*;

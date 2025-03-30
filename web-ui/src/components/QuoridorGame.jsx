@@ -437,7 +437,7 @@ const QuoridorGameComponent = () => {
   const isAiVsAi = player1Strategy !== 'Human' && player2Strategy !== 'Human';
 
   return (
-    <div className="flex flex-col items-center p-4 md:p-6 min-h-screen bg-gray-100 font-sans">
+    <div className="flex flex-col items-center p-4 md:p-6 bg-white font-sans rounded-xl shadow-2xl w-full">
       {/* Header */}
       <div className="w-full max-w-6xl bg-white rounded-t-lg shadow-md p-4 flex justify-between items-center border-b-2 border-gray-200 mb-4">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Quoridor AI Arena</h1>
@@ -477,25 +477,22 @@ const QuoridorGameComponent = () => {
         {/* Center Area: Board and Status Message */}
         <div className="flex-1 p-4 md:p-6 flex flex-col items-center">
            {/* Status Message Area */}
-          <div className="w-full mb-4 min-h-[40px] flex items-center justify-center">
-              {message && (
-                  <div className={`px-4 py-2 rounded-lg text-center text-sm md:text-base transition-colors duration-300 ${
-                      winner
-                          ? (winner === Player.PLAYER1
-                              ? 'bg-blue-100 text-blue-800 font-bold'
-                              : 'bg-red-100 text-red-800 font-bold')
-                          : 'bg-gray-100 text-gray-700'
-                  }`}>
-                      {message}
-                  </div>
-              )}
-              {isThinking && (
-                  <div className="ml-4 bg-purple-100 px-3 py-1 rounded-full text-purple-800 text-xs flex items-center animate-pulse">
-                      <AlertCircle size={14} className="mr-1" />
-                      Thinking...
-                  </div>
-              )}
-          </div>
+           <div className="w-full mb-4 min-h-[40px] flex items-center justify-center">
+                {message && (
+                    <div className={`px-4 py-2 rounded-lg text-center text-sm md:text-base transition-colors duration-300 ${
+                        winner
+                            ? (winner === Player.PLAYER1
+                                ? 'bg-blue-100 text-blue-800 font-bold'
+                                : 'bg-red-100 text-red-800 font-bold')
+                            : isThinking 
+                                ? 'bg-purple-100 text-purple-800 flex items-center'
+                                : 'bg-gray-100 text-gray-700'
+                    }`}>
+                        {isThinking && <AlertCircle size={14} className="mr-2 animate-pulse" />}
+                        {message}
+                    </div>
+                )}
+            </div>
 
           {/* Game Board */}
           <div className="mb-4 md:mb-6">
