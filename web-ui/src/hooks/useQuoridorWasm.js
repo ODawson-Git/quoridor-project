@@ -11,23 +11,33 @@ export function useQuoridorWasm() {
   useEffect(() => {
     // ... (wasm loading logic - unchanged) ...
     const loadWasm = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            console.log('Initializing WASM module via alias...');
-            await init();
-             if (typeof WasmQuoridor === 'undefined') {
-               throw new Error("WasmQuoridor constructor not found after init.");
-            }
-            console.log('WASM module initialized successfully.');
-            setWasmModuleLoaded(true);
-        } catch (err) {
-            console.error('Failed to load WASM module:', err);
-            setError(err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+      setIsLoading(true);
+      setError(null);
+      try {
+          // Adjust the path based on environment
+          const wasmPath = import.meta.env.DEV 
+              ? '@wasm/quoridor_wasm.js'
+              : new URL('../node_modules/@wasm/quoridor_wasm.js', import.meta.url).href;
+              
+          console.log('Initializing WASM module from:', wasmPath);
+          // Use dynamic import to ensure correct path resolution
+          const wasmModule = await import(wasmPath);
+          await wasmModule.default();
+          
+          if (typeof wasmModule.QuoridorGame === 'undefined') {
+              throw new Error("WasmQuoridor constructor not found after init.");
+          }
+          console.log('WASM module initialized successfully.');
+          // Store the constructor for later use
+          window.WasmQuoridor = wasmModule.QuoridorGame;
+          setWasmModuleLoaded(true);
+      } catch (err) {
+          console.error('Failed to load WASM module:', err);
+          setError(err);
+      } finally {
+          setIsLoading(false);
+      }
+  };
     loadWasm();
   }, []);
 
