@@ -1,0 +1,40 @@
+{
+    "No Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "Random": 1.0
+            },
+            "column_strategy": {
+                "Random": 1.0
+            }
+        },
+        {
+            "equilibrium_index": 2,
+            "row_strategy": {
+                "Random": 1.0
+            },
+            "column_strategy": {
+                "Balanced": 1.0
+            }
+        },
+        {
+            "equilibrium_index": 3,
+            "row_strategy": {
+                "Balanced": 1.0
+            },
+            "column_strategy": {
+                "Random": 1.0
+            }
+        },
+        {
+            "equilibrium_index": 4,
+            "row_strategy": {
+                "Balanced": 1.0
+            },
+            "column_strategy": {
+                "Balanced": 1.0
+            }
+        }
+    ]
+}

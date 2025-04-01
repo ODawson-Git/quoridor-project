@@ -1,0 +1,24 @@
+{
+    "No Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "MCTS5sec": 1.0
+            },
+            "column_strategy": {
+                "MCTS5sec": 1.0
+            }
+        }
+    ],
+    "Standard Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "Adaptive": 1.0
+            },
+            "column_strategy": {
+                "Adaptive": 1.0
+            }
+        }
+    ]
+}

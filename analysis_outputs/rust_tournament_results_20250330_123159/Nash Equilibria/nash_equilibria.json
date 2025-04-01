@@ -1,0 +1,998 @@
+{
+    "Shiller Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "MCTS5sec": 1.0
+            },
+            "column_strategy": {
+                "MCTS5sec": 1.0
+            }
+        },
+        {
+            "equilibrium_index": 2,
+            "row_strategy": {
+                "MCTS5sec": 1.0
+            },
+            "column_strategy": {
+                "MCTS5sec": 0.5384449709239717,
+                "SimulatedAnnealing1.0": 0.46155502907602824
+            }
+        },
+        {
+            "equilibrium_index": 3,
+            "row_strategy": {
+                "MCTS5sec": 0.5384449709239717,
+                "SimulatedAnnealing1.0": 0.46155502907602836
+            },
+            "column_strategy": {
+                "MCTS5sec": 1.0
+            }
+        },
+        {
+            "equilibrium_index": 4,
+            "row_strategy": {
+                "MCTS5sec": 0.5384449709239717,
+                "SimulatedAnnealing1.0": 0.46155502907602836
+            },
+            "column_strategy": {
+                "MCTS5sec": 0.5384449709239717,
+                "SimulatedAnnealing1.0": 0.46155502907602824
+            }
+        }
+    ],
+    "No Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "Balanced": 0.2727272727272732,
+                "MCTS5sec": 0.5454545454545456,
+                "Random": 0.18181818181818157
+            },
+            "column_strategy": {
+                "Balanced": 0.2727272727272732,
+                "MCTS5sec": 0.5454545454545456,
+                "Random": 0.1818181818181816
+            }
+        },
+        {
+            "equilibrium_index": 2,
+            "row_strategy": {
+                "Balanced": 0.2727272727272732,
+                "MCTS5sec": 0.5454545454545456,
+                "Random": 0.18181818181818157
+            },
+            "column_strategy": {
+                "Balanced": 0.5000000000000002,
+                "MCTS5sec": 0.5000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 3,
+            "row_strategy": {
+                "Balanced": 0.2727272727272732,
+                "MCTS5sec": 0.5454545454545456,
+                "Random": 0.18181818181818157
+            },
+            "column_strategy": {
+                "Balanced": 0.33333333333333404,
+                "MCTS5sec": 0.6666666666666665
+            }
+        },
+        {
+            "equilibrium_index": 4,
+            "row_strategy": {
+                "Balanced": 0.5000000000000002,
+                "MCTS5sec": 0.5000000000000002
+            },
+            "column_strategy": {
+                "Balanced": 0.2727272727272732,
+                "MCTS5sec": 0.5454545454545456,
+                "Random": 0.1818181818181816
+            }
+        },
+        {
+            "equilibrium_index": 5,
+            "row_strategy": {
+                "Balanced": 0.5000000000000002,
+                "MCTS5sec": 0.5000000000000002
+            },
+            "column_strategy": {
+                "Balanced": 0.5000000000000002,
+                "MCTS5sec": 0.5000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 6,
+            "row_strategy": {
+                "Balanced": 0.5000000000000002,
+                "MCTS5sec": 0.5000000000000002
+            },
+            "column_strategy": {
+                "Balanced": 0.33333333333333404,
+                "MCTS5sec": 0.6666666666666665
+            }
+        },
+        {
+            "equilibrium_index": 7,
+            "row_strategy": {
+                "Balanced": 0.33333333333333404,
+                "MCTS5sec": 0.6666666666666665
+            },
+            "column_strategy": {
+                "Balanced": 0.2727272727272732,
+                "MCTS5sec": 0.5454545454545456,
+                "Random": 0.1818181818181816
+            }
+        },
+        {
+            "equilibrium_index": 8,
+            "row_strategy": {
+                "Balanced": 0.33333333333333404,
+                "MCTS5sec": 0.6666666666666665
+            },
+            "column_strategy": {
+                "Balanced": 0.5000000000000002,
+                "MCTS5sec": 0.5000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 9,
+            "row_strategy": {
+                "Balanced": 0.33333333333333404,
+                "MCTS5sec": 0.6666666666666665
+            },
+            "column_strategy": {
+                "Balanced": 0.33333333333333404,
+                "MCTS5sec": 0.6666666666666665
+            }
+        }
+    ],
+    "Standard Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "Adaptive": 0.3333333333333334,
+                "Defensive": 0.33333333333333337,
+                "MCTS5sec": 0.3333333333333332
+            },
+            "column_strategy": {
+                "Adaptive": 0.3333333333333334,
+                "Defensive": 0.33333333333333337,
+                "MCTS5sec": 0.3333333333333332
+            }
+        },
+        {
+            "equilibrium_index": 2,
+            "row_strategy": {
+                "Adaptive": 0.3333333333333334,
+                "Defensive": 0.33333333333333337,
+                "MCTS5sec": 0.3333333333333332
+            },
+            "column_strategy": {
+                "Adaptive": 0.33333333333333337,
+                "Balanced": 0.11111111111111135,
+                "Defensive": 0.222222222222222,
+                "MCTS5sec": 0.3333333333333332
+            }
+        },
+        {
+            "equilibrium_index": 3,
+            "row_strategy": {
+                "Adaptive": 0.33333333333333337,
+                "Balanced": 0.11111111111111133,
+                "Defensive": 0.222222222222222,
+                "MCTS5sec": 0.3333333333333332
+            },
+            "column_strategy": {
+                "Adaptive": 0.3333333333333334,
+                "Defensive": 0.33333333333333337,
+                "MCTS5sec": 0.3333333333333332
+            }
+        },
+        {
+            "equilibrium_index": 4,
+            "row_strategy": {
+                "Adaptive": 0.33333333333333337,
+                "Balanced": 0.11111111111111133,
+                "Defensive": 0.222222222222222,
+                "MCTS5sec": 0.3333333333333332
+            },
+            "column_strategy": {
+                "Adaptive": 0.33333333333333337,
+                "Balanced": 0.11111111111111135,
+                "Defensive": 0.222222222222222,
+                "MCTS5sec": 0.3333333333333332
+            }
+        }
+    ],
+    "Ala Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 2,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 3,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 4,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 5,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 6,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 7,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 8,
+            "row_strategy": {
+                "Defensive": 0.9999999999999999
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        },
+        {
+            "equilibrium_index": 9,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 10,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 11,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 12,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 13,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 14,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 15,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 16,
+            "row_strategy": {
+                "Defensive": 0.021469637082285737,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        },
+        {
+            "equilibrium_index": 17,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 18,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 19,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 20,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 21,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 22,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 23,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 24,
+            "row_strategy": {
+                "MCTS1sec": 0.08359566281916941,
+                "MCTS5sec": 0.2497376705141642,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        },
+        {
+            "equilibrium_index": 25,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 26,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 27,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 28,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 29,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 30,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 31,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 32,
+            "row_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.18745077448149086,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        },
+        {
+            "equilibrium_index": 33,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 34,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 35,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 36,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 37,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 38,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 39,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 40,
+            "row_strategy": {
+                "MCTS1sec": 0.16666666666666677,
+                "MCTS5sec": 0.16666666666666688,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        },
+        {
+            "equilibrium_index": 41,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 42,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 43,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 44,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 45,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 46,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 47,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 48,
+            "row_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        },
+        {
+            "equilibrium_index": 49,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 50,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 51,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 52,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 53,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 54,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 55,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 56,
+            "row_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.256095062487195,
+                "MCTS5sec": 0.25609506248719494
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        },
+        {
+            "equilibrium_index": 57,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "Defensive": 1.0000000000000002
+            }
+        },
+        {
+            "equilibrium_index": 58,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.08359566281916928,
+                "MCTS5sec": 0.24973767051416434,
+                "SimulatedAnnealing0.5": 0.6666666666666664
+            }
+        },
+        {
+            "equilibrium_index": 59,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.1666666666666668,
+                "MCTS5sec": 0.16666666666666685,
+                "SimulatedAnnealing0.5": 0.6666666666666663
+            }
+        },
+        {
+            "equilibrium_index": 60,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "Defensive": 0.5714775454233808,
+                "MCTS5sec": 0.42852245457661925
+            }
+        },
+        {
+            "equilibrium_index": 61,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "Defensive": 0.021469637082285727,
+                "MCTS5sec": 0.30470715055695263,
+                "SimulatedAnnealing0.5": 0.6738232123607617
+            }
+        },
+        {
+            "equilibrium_index": 62,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "Defensive": 0.4878098750256101,
+                "MCTS1sec": 0.25609506248719505,
+                "MCTS5sec": 0.256095062487195
+            }
+        },
+        {
+            "equilibrium_index": 63,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "MCTS1sec": 0.18745077448149108,
+                "MCTS5sec": 0.1874507744814909,
+                "SimulatedAnnealing0.5": 0.625098451037018
+            }
+        },
+        {
+            "equilibrium_index": 64,
+            "row_strategy": {
+                "Defensive": 0.2500000000000003,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            },
+            "column_strategy": {
+                "Defensive": 0.25000000000000033,
+                "SimulatedAnnealing0.5": 0.7499999999999998
+            }
+        }
+    ],
+    "Sidewall Opening": [
+        {
+            "equilibrium_index": 1,
+            "row_strategy": {
+                "Balanced": 0.06664177711405647,
+                "MCTS1sec": 0.350009333582229,
+                "MCTS5sec": 0.11666977786074287,
+                "Minimax1": 0.11666977786074323,
+                "Minimax2": 0.35000933358222847
+            },
+            "column_strategy": {
+                "Balanced": 0.06664177711405647,
+                "MCTS1sec": 0.350009333582229,
+                "MCTS5sec": 0.11666977786074287,
+                "Minimax1": 0.11666977786074323,
+                "Minimax2": 0.35000933358222847
+            }
+        }
+    ]
+}

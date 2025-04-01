@@ -322,8 +322,8 @@ impl Tournament {
             "Defensive",
             "Balanced",
             "Adaptive",
-            // Advanced / From Papers
             "Mirror",
+            // Advanced / From Papers
             "SimulatedAnnealing0.5", // From paper's experiments
             "SimulatedAnnealing1.0",
             "Minimax1", // Low depth for speed
@@ -335,10 +335,10 @@ impl Tournament {
 
         let opening_names = vec![
             "No Opening",
-            "Sidewall Opening",
+            //"Sidewall Opening",
             "Standard Opening",
-            "Shiller Opening", // Example other openings
-            "Ala Opening",
+            //"Shiller Opening", 
+            //"Ala Opening",
         ];
         // --- End Configuration ---
 
@@ -572,7 +572,7 @@ fn main() {
     let mut tournament = Tournament::new(
         9,   // board size (standard)
         10,  // walls per player (standard)
-        8, // Number of games per matchup (e.g., 50 games, 25 starting each side)
+        30, // Number of games per matchup (e.g., 50 games, 25 starting each side)
     );
 
     // Optional: Configure MCTS parameters if needed globally

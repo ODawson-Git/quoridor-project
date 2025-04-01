@@ -470,11 +470,25 @@ impl Quoridor {
 
     /// Checks if the move (represented by the destination coord) is a winning move for the *current* active player.
     pub fn win_check(&self, move_alg: &str) -> bool {
+        // --- CORRECTED LOGIC ---
+        // A winning move must be a pawn move. Standard pawn moves in algebraic
+        // notation (e.g., "e1", "a4") have a length of 2.
+        // Wall moves (e.g., "e8h", "a1v") have a length of 3.
+        // Therefore, if the move string isn't length 2, it cannot be a winning pawn move.
+        if move_alg.len() != 2 {
+            return false; // It's a wall move or an invalid format, not a winning pawn move.
+        }
+        // --- END CORRECTION ---
+
+        // If it might be a pawn move, proceed with the original check:
         let destination = self.algebraic_to_coord(move_alg);
          if let Some(goal_line) = self.goal_positions.get(&self.active_player) {
+             // Check if the destination coordinate is within the player's goal line
              goal_line.contains(&destination)
          } else {
-             false // Should not happen
+             // This case should ideally not happen if goal_positions is always set up correctly.
+             eprintln!("Warning: Could not find goal line for player {:?} during win check.", self.active_player);
+             false
          }
     }
 
