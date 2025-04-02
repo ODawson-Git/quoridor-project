@@ -24,6 +24,7 @@ quoridor-project/
 ├── quoridor-cli/         # CLI tournament runner
 ├── web-ui/               # React frontend for browser gameplay
 ├── analysis/             # Python scripts for tournament analysis
+├── analysis_outputs/     # Python script analysis outputs per tournament
 └── tournament_outputs/   # CSV files from tournament runs
 ```
 
@@ -114,8 +115,7 @@ To run AI tournaments:
 1. Ensure Rust is installed
 2. Run the tournament CLI:
    ```
-   cd quoridor-project
-   cargo run -p quoridor-cli
+   ./run_local_tournament.sh
    ```
 3. Results will be saved in the `tournament_outputs/` directory
 
