@@ -114,8 +114,7 @@ To run AI tournaments:
 1. Ensure Rust is installed
 2. Run the tournament CLI:
    ```
-   cd quoridor-project
-   cargo run -p quoridor-cli
+   ./run_local_tournament.sh
    ```
 3. Results will be saved in the `tournament_outputs/` directory
 
