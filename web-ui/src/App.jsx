@@ -5,7 +5,7 @@ import './index.css'; // Import Tailwind styles
 
 function App() {
   return (
-    <div className="App min-h-screen bg-gray-100">
+    <div className="App items-center min-h-screen bg-gray-100">
       <QuoridorGame />
     </div>
   );

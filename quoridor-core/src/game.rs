@@ -253,12 +253,25 @@ impl Quoridor {
 
 
                  if jump_blocked {
-                     // Check opponent's neighbors (potential diagonal jump spots)
+                     // Check opponent's neighbors for valid DIAGONAL jump spots
                      for op_neighbor_idx in self.graph.neighbors(*opponent_node) {
                          let op_neighbor_pos = self.graph[op_neighbor_idx];
-                         // Must be adjacent to opponent and not where the jumping player came from
+                         // Must be adjacent to opponent, not where the jumping player came from,
+                         // reachable from the opponent, and diagonal to the jump direction.
                          if op_neighbor_pos != *own_pos {
-                             legal_coords.insert(op_neighbor_pos);
+                             // Calculate relative directions
+                             let jump_dr = opponent_pos.0 as i32 - own_pos.0 as i32;
+                             let jump_dc = opponent_pos.1 as i32 - own_pos.1 as i32;
+                             let move_dr = op_neighbor_pos.0 as i32 - opponent_pos.0 as i32;
+                             let move_dc = op_neighbor_pos.1 as i32 - opponent_pos.1 as i32;
+
+                             // Check for orthogonality (dot product == 0) and path existence
+                             if jump_dr * move_dr + jump_dc * move_dc == 0 {
+                                 // Ensure the path from opponent to this diagonal spot is clear
+                                 if self.graph.contains_edge(*opponent_node, op_neighbor_idx) {
+                                     legal_coords.insert(op_neighbor_pos);
+                                 }
+                             }
                          }
                      }
                  }
@@ -684,7 +697,7 @@ mod game_tests {
 
              let p2_moves = game.get_legal_moves(Player::Player2);
              assert_eq!(p2_moves.len(), 3); // d9, e8, f9
-              assert!(p2_moves.contains(&"d9".to_string()));
+             assert!(p2_moves.contains(&"d9".to_string()));
              assert!(p2_moves.contains(&"e8".to_string()));
              assert!(p2_moves.contains(&"f9".to_string()));
         }
