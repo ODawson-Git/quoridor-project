@@ -161,17 +161,14 @@ def analyze_tournament_results(csv_file):
             print(f"Calculating Replicator Dynamics and Nash Equilibria for {opening}...")
              # Payoff matrix A based on head-to-head win rate (row player's perspective)
             payoff_matrix_A = matchup_matrix_pct.to_numpy() / 100.0
-             # Payoff matrix B (col player's perspective), assuming zero-sum for dynamics
-            payoff_matrix_B = 1.0 - payoff_matrix_A
-            np.fill_diagonal(payoff_matrix_B, 0.5) # Maintain consistency on diagonal
 
-            if np.isnan(payoff_matrix_A).any() or np.isnan(payoff_matrix_B).any():
+            if np.isnan(payoff_matrix_A).any():
                 print(f"Skipping Nashpy analysis for {opening} due to missing data (NaN).")
                 all_nash_equilibria[opening] = {"error": "Skipped due to NaN in payoff matrix"}
                 continue
 
             try:
-                game = nash.Game(payoff_matrix_A, payoff_matrix_B)
+                game = nash.Game(payoff_matrix_A) # Zero sum game
 
                 # --- 2a. Replicator Dynamics ---
                 # ... (Replicator dynamics plotting code remains the same) ...
