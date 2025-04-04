@@ -35,28 +35,35 @@ impl MirrorStrategy {
     /// Calculates the mirrored position relative to the board center.
     fn calculate_mirrored_coord(&mut self, game: &Quoridor, coord: Coord) -> Coord {
         let center = self.get_board_center(game);
+        // Mirror calculation: 2 * center - coordinate
         let mirrored_row = 2.0 * center.0 - coord.0 as f64;
         let mirrored_col = 2.0 * center.1 - coord.1 as f64;
 
         // Clamp to board boundaries and round
-        let row = (mirrored_row.round() as i32).clamp(0, (game.size - 1) as i32) as usize;
-        let col = (mirrored_col.round() as i32).clamp(0, (game.size - 1) as i32) as usize;
+        let row = (mirrored_row.round() as i32).clamp(1, (game.size) as i32) as usize;
+        let col = (mirrored_col.round() as i32).clamp(0, (game.size) as i32) as usize;
         (row, col)
     }
 
     /// Finds the best legal pawn move towards a target coordinate.
     fn find_best_move_towards(&self, game: &Quoridor, target_coord: Coord) -> Option<String> {
-        let player = game.active_player;
-        let Some(current_pos) = game.pawn_positions.get(&player) else { return None; };
+        let player: Player = game.active_player;
+        let Some(_current_pos) = game.pawn_positions.get(&player) else { return None; };
+        // Get all legal moves and filter for pawn moves inside the loop
         let legal_moves = game.get_legal_moves(player);
 
-        if legal_moves.is_empty() { return None; }
+        if legal_moves.is_empty() { return None; } // Check the original legal_moves vec
 
         let mut best_move: Option<String> = None;
         let mut min_dist_sq = f64::MAX; // Use squared distance to avoid sqrt
 
-        for move_str in &legal_moves {
-            let move_coord = game.algebraic_to_coord(move_str);
+        for move_str in &legal_moves { // Iterate over all legal moves
+            // Skip wall moves
+            if move_str.contains('h') || move_str.contains('v') {
+                continue;
+            }
+            // Now we know it's a pawn move
+            let move_coord = game.algebraic_to_coord(move_str.as_str()); // Explicitly use &str
             let dist_sq = ((move_coord.0 as f64 - target_coord.0 as f64).powi(2) +
                            (move_coord.1 as f64 - target_coord.1 as f64).powi(2));
 
@@ -65,7 +72,7 @@ impl MirrorStrategy {
 
             if dist_sq < min_dist_sq {
                 min_dist_sq = dist_sq;
-                best_move = Some(move_str.clone());
+                best_move = Some(move_str.to_string()); // Use to_string() instead of clone()
             }
         }
         best_move
@@ -89,8 +96,10 @@ impl MirrorStrategy {
          }
 
 
-        // Check opponent's horizontal walls
+        // Check all horizontal walls
         for &opponent_h_wall_coord in &game.hwall_positions {
+            // Adjust hwallcoord since placed in bottom left
+            let opponent_h_wall_coord = (opponent_h_wall_coord.0 - 1, opponent_h_wall_coord.1 + 1);
             let mirrored_coord = self.calculate_mirrored_coord(game, opponent_h_wall_coord);
             let mirrored_wall_move = format!("{}h", game.coord_to_algebraic(mirrored_coord));
             if legal_walls_set.contains(&mirrored_wall_move) && !placed_walls.contains(&mirrored_wall_move) {
@@ -98,8 +107,9 @@ impl MirrorStrategy {
             }
         }
 
-        // Check opponent's vertical walls
+        // Check all vertical walls
         for &opponent_v_wall_coord in &game.vwall_positions {
+            let opponent_v_wall_coord = (opponent_v_wall_coord.0 - 1, opponent_v_wall_coord.1 + 1);
             let mirrored_coord = self.calculate_mirrored_coord(game, opponent_v_wall_coord);
             let mirrored_wall_move = format!("{}v", game.coord_to_algebraic(mirrored_coord));
              if legal_walls_set.contains(&mirrored_wall_move) && !placed_walls.contains(&mirrored_wall_move) {
@@ -126,18 +136,18 @@ impl Strategy for MirrorStrategy {
         let opponent = player.opponent();
         let Some(opponent_pos) = game.pawn_positions.get(&opponent) else { return self.backup_strategy.choose_move(game); };
 
-        // Priority 1: Move towards opponent's mirrored position
+        // Priority 1: Place a mirrored wall if possible
+        if let Some(wall_move) = self.find_mirrored_wall_placement(game) {
+            return Some(wall_move);
+        }
+
+        // Priority 2: Move towards opponent's mirrored position
         let target_pos = self.calculate_mirrored_coord(game, *opponent_pos);
         if let Some(pawn_move) = self.find_best_move_towards(game, target_pos) {
             // Only move if we are not already at the target
              if game.pawn_positions[&player] != target_pos {
                   return Some(pawn_move);
              }
-        }
-
-        // Priority 2: Place a mirrored wall if possible
-        if let Some(wall_move) = self.find_mirrored_wall_placement(game) {
-            return Some(wall_move);
         }
 
         // Fallback: Use the backup strategy
