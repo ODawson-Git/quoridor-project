@@ -19,12 +19,12 @@ const Player = {
   PLAYER2: 'player2',
 };
 
-// Strategy names - Define locally or import
-const STRATEGIES = [
+// Base strategy names - These are the core types
+const BASE_STRATEGIES = [
     'Human', 'Random', 'ShortestPath', 'Defensive', 'Balanced', 'Adaptive',
-    'Minimax1', 'Minimax2', 'Mirror', "MCTS1k", // Example MCTS
-    "SimulatedAnnealing0.5", "SimulatedAnnealing1.0", "SimulatedAnnealing2.0" // Example SA
+    'Minimax', 'Mirror', "MCTS", "SimulatedAnnealing"
 ];
+
 // Opening names - Define locally or import
 const OPENINGS = [
     'No Opening', 'Sidewall Opening', 'Standard Opening', 'Shiller Opening',
@@ -69,8 +69,9 @@ const QuoridorGameComponent = () => {
 
   // --- React State ---
   const [boardState, setBoardState] = useState(getInitialBoardState());
-  const [player1Strategy, setPlayer1Strategy] = useState('Human');
-  const [player2Strategy, setPlayer2Strategy] = useState('Adaptive'); // Default AI opponent
+  // Store strategy as an object: { baseName: string, params: object }
+  const [player1Strategy, setPlayer1Strategy] = useState({ baseName: 'Human', params: {} });
+  const [player2Strategy, setPlayer2Strategy] = useState({ baseName: 'Adaptive', params: {} }); // Default AI opponent
   const [selectedOpening, setSelectedOpening] = useState('No Opening');
   const [isGameActive, setIsGameActive] = useState(false);
   const [winner, setWinner] = useState(null);
@@ -82,6 +83,41 @@ const QuoridorGameComponent = () => {
 
   // Ref to prevent concurrent AI moves
   const isProcessingAiMove = useRef(false);
+
+  // --- Helper to construct full strategy name for WASM ---
+  const getFullStrategyName = useCallback((strategy) => {
+      if (!strategy || strategy.baseName === 'Human') return 'Human'; // Or handle appropriately
+
+      switch (strategy.baseName) {
+          case 'Minimax':
+              return `Minimax${strategy.params?.depth || 1}`; // Default depth 1
+          case 'MCTS':
+              // Prefer simulations if provided, else time (converted in WASM)
+              if (strategy.params?.simulations) {
+                  const sims = strategy.params.simulations;
+                  return `MCTS${sims >= 1000 ? `${sims / 1000}k` : sims}`; // Use 'k' notation
+              } else if (strategy.params?.time) {
+                  return `MCTS${strategy.params.time}sec`;
+              }
+              return 'MCTS10k'; // Default simulations
+          case 'SimulatedAnnealing':
+              return `SimulatedAnnealing${strategy.params?.factor || 1.0}`; // Default factor 1.0
+          case 'Defensive':
+              return `Defensive`; // Params handled internally for now, or pass via name if needed
+          case 'Balanced':
+               return `Balanced`; // Params handled internally for now
+          // Strategies without parameters
+          case 'Random':
+          case 'ShortestPath':
+          case 'Adaptive':
+          case 'Mirror':
+              return strategy.baseName;
+          default:
+              console.warn("Unknown base strategy:", strategy.baseName);
+              return strategy.baseName; // Fallback
+      }
+  }, []);
+
 
   // --- Coordinate Conversion Callbacks --- (memoized for stability)
   const toAlgebraicNotation = useCallback((row, col) => {
@@ -193,15 +229,18 @@ const QuoridorGameComponent = () => {
 
       // Set strategies in WASM *after* reset
       let success = true;
-      if (player1Strategy !== 'Human') {
-          if (!setWasmStrategy(1, player1Strategy, selectedOpening)) {
-              console.error("Failed to set P1 strategy in WASM");
+      const p1StratName = getFullStrategyName(player1Strategy);
+      const p2StratName = getFullStrategyName(player2Strategy);
+
+      if (player1Strategy.baseName !== 'Human') {
+          if (!setWasmStrategy(1, p1StratName, selectedOpening)) {
+              console.error(`Failed to set P1 strategy '${p1StratName}' in WASM`);
               success = false;
           }
       }
-       if (player2Strategy !== 'Human') {
-            if (!setWasmStrategy(2, player2Strategy, selectedOpening)) {
-                console.error("Failed to set P2 strategy in WASM");
+       if (player2Strategy.baseName !== 'Human') {
+            if (!setWasmStrategy(2, p2StratName, selectedOpening)) {
+                console.error(`Failed to set P2 strategy '${p2StratName}' in WASM`);
                 success = false;
             }
        }
@@ -219,11 +258,11 @@ const QuoridorGameComponent = () => {
                  setMessage("Error fetching initial game state after start.");
                  setIsGameActive(false);
             } else {
-                 setMessage(`Game started. ${selectedOpening !== 'No Opening' ? `Opening: ${selectedOpening}. ` : ''}Player 1's turn.`);
+                 setMessage(`Game started. ${selectedOpening !== 'No Opening' ? `Opening: ${selectedOpening}. ` : ''}${player1Strategy.baseName}'s turn.`);
             }
        }, 100); // Small delay
 
-  }, [wasmLoaded, player1Strategy, player2Strategy, selectedOpening, resetWasmGame, setWasmStrategy, updateStateAndMovesFromWasm]);
+  }, [wasmLoaded, player1Strategy, player2Strategy, selectedOpening, resetWasmGame, setWasmStrategy, updateStateAndMovesFromWasm, getFullStrategyName]);
 
   const handleResetGame = useCallback(() => {
       console.log("Resetting game...");
@@ -306,7 +345,7 @@ const QuoridorGameComponent = () => {
   }, [isGameActive, winner, makeWasmMove, checkWasmWin, updateStateAndMovesFromWasm, getWasmGameState, fromAlgebraicNotation, boardState.activePlayer]);
 
   const handleCellClick = useCallback((row, col) => {
-      const currentStrategy = boardState.activePlayer === Player.PLAYER1 ? player1Strategy : player2Strategy;
+      const currentStrategy = boardState.activePlayer === Player.PLAYER1 ? player1Strategy.baseName : player2Strategy.baseName;
       if (!isGameActive || winner || currentStrategy !== 'Human' || isThinking) return;
 
       const isLegal = nextPawnMoves.some(m => m.row === row && m.col === col);
@@ -319,7 +358,7 @@ const QuoridorGameComponent = () => {
   }, [isGameActive, winner, boardState.activePlayer, player1Strategy, player2Strategy, isThinking, nextPawnMoves, toAlgebraicNotation, handleMakeMove]);
 
   const handleWallClick = useCallback((row, col, orientation) => {
-      const currentStrategy = boardState.activePlayer === Player.PLAYER1 ? player1Strategy : player2Strategy;
+      const currentStrategy = boardState.activePlayer === Player.PLAYER1 ? player1Strategy.baseName : player2Strategy.baseName;
       const wallsAvailable = boardState.activePlayer === Player.PLAYER1 ? boardState.player1Walls : boardState.player2Walls;
       if (!isGameActive || winner || currentStrategy !== 'Human' || isThinking || wallsAvailable <= 0) {
            if(wallsAvailable <= 0) setMessage("No walls left!");
@@ -342,13 +381,14 @@ const QuoridorGameComponent = () => {
    const makeAiMove = useCallback(async () => {
       if (!isGameActive || winner || isProcessingAiMove.current) return;
 
-       const currentStrategyName = boardState.activePlayer === Player.PLAYER1 ? player1Strategy : player2Strategy;
-       if (currentStrategyName === 'Human') return; // Skip if human's turn
+       const currentStrategy = boardState.activePlayer === Player.PLAYER1 ? player1Strategy : player2Strategy;
+       if (currentStrategy.baseName === 'Human') return; // Skip if human's turn
 
-       console.log(`Requesting move for AI: ${currentStrategyName} (${boardState.activePlayer})`);
+       const currentStrategyDisplayName = getFullStrategyName(currentStrategy); // Get full name for logging/display
+       console.log(`Requesting move for AI: ${currentStrategyDisplayName} (${boardState.activePlayer})`);
        setIsThinking(true);
        isProcessingAiMove.current = true;
-       setMessage(`${currentStrategyName} is thinking...`);
+       setMessage(`${currentStrategyDisplayName} is thinking...`);
 
        // Use setTimeout to allow UI update before potentially blocking WASM call
        await new Promise(resolve => setTimeout(resolve, 10)); // Short delay
@@ -357,8 +397,8 @@ const QuoridorGameComponent = () => {
            const moveStr = getWasmAiMove(); // Get move from WASM hook
 
            if (moveStr && moveStr.length > 0 && moveStr !== "resign") {
-               console.log(`AI (${currentStrategyName}) chose: ${moveStr}`);
-               setMessage(`${currentStrategyName} plays ${moveStr}`);
+               console.log(`AI (${currentStrategyDisplayName}) chose: ${moveStr}`);
+               setMessage(`${currentStrategyDisplayName} plays ${moveStr}`);
                // Determine move type based on string format
                const isWall = moveStr.length === 3 && (moveStr.endsWith('h') || moveStr.endsWith('v'));
                const moveType = isWall ? 'wall' : 'pawn';
@@ -367,15 +407,15 @@ const QuoridorGameComponent = () => {
                handleMakeMove(moveStr, moveType, orientation); // Use the common handler
 
            } else if (moveStr === "resign") {
-               console.log(`AI (${currentStrategyName}) resigns.`);
+               console.log(`AI (${currentStrategyDisplayName}) resigns.`);
                const winningPlayer = boardState.activePlayer === Player.PLAYER1 ? Player.PLAYER2 : Player.PLAYER1;
                 setWinner(winningPlayer);
                 setIsGameActive(false);
-                setMessage(`${currentStrategyName} resigns. ${winningPlayer === Player.PLAYER1 ? 'Player 1' : 'Player 2'} wins!`);
+                setMessage(`${currentStrategyDisplayName} resigns. ${winningPlayer === Player.PLAYER1 ? 'Player 1' : 'Player 2'} wins!`);
            }
            else {
-               console.error(`AI (${currentStrategyName}) returned invalid move: "${moveStr}"`);
-               setMessage(`Error: AI (${currentStrategyName}) failed to find a valid move.`);
+               console.error(`AI (${currentStrategyDisplayName}) returned invalid move: "${moveStr}"`);
+               setMessage(`Error: AI (${currentStrategyDisplayName}) failed to find a valid move.`);
                // Potentially end game or revert? For now, just log.
                 setIsGameActive(false); // Stop game on AI error?
            }
@@ -389,7 +429,7 @@ const QuoridorGameComponent = () => {
             console.log("AI move processing finished.");
        }
 
-   }, [isGameActive, winner, boardState.activePlayer, player1Strategy, player2Strategy, getWasmAiMove, handleMakeMove]);
+   }, [isGameActive, winner, boardState.activePlayer, player1Strategy, player2Strategy, getWasmAiMove, handleMakeMove, getFullStrategyName]);
 
 
   // --- Effect for Triggering AI Moves ---
@@ -400,7 +440,7 @@ const QuoridorGameComponent = () => {
 
       const currentStrategy = boardState.activePlayer === Player.PLAYER1 ? player1Strategy : player2Strategy;
 
-      if (currentStrategy !== 'Human') {
+      if (currentStrategy.baseName !== 'Human') {
            // Use setTimeout to schedule the AI move
            const timeoutId = setTimeout(() => {
                makeAiMove();
@@ -434,7 +474,7 @@ const QuoridorGameComponent = () => {
     return <div className="text-red-600 p-4">Error loading WASM: {wasmError.message || JSON.stringify(wasmError)}</div>;
   }
 
-  const isAiVsAi = player1Strategy !== 'Human' && player2Strategy !== 'Human';
+  const isAiVsAi = player1Strategy.baseName !== 'Human' && player2Strategy.baseName !== 'Human';
 
   return (
     <div className="flex flex-col items-center p-4 md:p-6 bg-white font-sans rounded-xl shadow-2xl w-full">
@@ -454,12 +494,12 @@ const QuoridorGameComponent = () => {
 
         {/* Controls Sidebar */}
         <Controls
-            strategies={STRATEGIES}
+            baseStrategies={BASE_STRATEGIES} // Pass base names
             openings={OPENINGS}
-            player1Strategy={player1Strategy}
-            setPlayer1Strategy={setPlayer1Strategy}
-            player2Strategy={player2Strategy}
-            setPlayer2Strategy={setPlayer2Strategy}
+            player1Strategy={player1Strategy} // Pass the full strategy object
+            setPlayer1Strategy={setPlayer1Strategy} // Pass the setter
+            player2Strategy={player2Strategy} // Pass the full strategy object
+            setPlayer2Strategy={setPlayer2Strategy} // Pass the setter
             selectedOpening={selectedOpening}
             setSelectedOpening={setSelectedOpening}
             onStartGame={handleStartGame}
@@ -502,8 +542,8 @@ const QuoridorGameComponent = () => {
                   onWallClick={handleWallClick}
                   nextPawnMoves={nextPawnMoves}
                   nextWallMoves={nextWallMoves}
-                  player1Strategy={player1Strategy} // Pass strategy to board for disabling clicks
-                  player2Strategy={player2Strategy}
+                  player1Strategy={player1Strategy.baseName} // Pass base name to board for disabling clicks
+                  player2Strategy={player2Strategy.baseName}
               />
           </div>
         </div>

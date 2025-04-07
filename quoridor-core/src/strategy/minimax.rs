@@ -1,10 +1,11 @@
 // --- File: quoridor-project/quoridor-core/src/strategy/minimax.rs ---
 
-use crate::game::Quoridor;
-use crate::player::Player;
-use crate::strategy::base::QuoridorStrategy;
-use crate::strategy::Strategy;
-use std::cmp::Ordering;
+use crate::{game::Quoridor, player::Player, strategy::base::QuoridorStrategy, strategy::Strategy};
+use std::{cmp::Ordering, f64};
+
+// --- Platform-specific Parallelism ---
+#[cfg(not(target_arch = "wasm32"))]
+use rayon::prelude::*;
 
 pub struct MinimaxStrategy {
     base: QuoridorStrategy,
@@ -27,8 +28,8 @@ impl MinimaxStrategy {
     /// Higher scores are better for the current player.
     /// Uses the heuristic (f2+f3+f4 with weights) from the Mertens paper (strategy C3).
     fn evaluate_state(&self, game: &Quoridor) -> f64 {
-        let current_player = game.active_player; // Player to potentially move *next*
-        let opponent = current_player.opponent();
+        // let current_player = game.active_player; // Unused
+        // let opponent = current_player.opponent(); // Unused
 
          // Important: Evaluate based on the state *before* the current player moves.
          // Typically, evaluation functions assess the position itself, not whose turn it is.
@@ -152,7 +153,15 @@ impl MinimaxStrategy {
 
 impl Strategy for MinimaxStrategy {
     fn name(&self) -> String {
-        self.base.name.clone()
+        // Add thread count info for parallel version
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            format!("{}x{}", self.base.name, rayon::current_num_threads())
+        }
+        #[cfg(target_arch = "wasm32")]
+        {
+            self.base.name.clone()
+        }
     }
 
     fn choose_move(&mut self, game: &Quoridor) -> Option<String> {
@@ -178,45 +187,88 @@ impl Strategy for MinimaxStrategy {
             .collect();
 
         if all_moves.is_empty() {
-            return None;
+            return None; // No legal moves
         }
 
-        let mut best_move: Option<String> = None;
-        let mut best_score = f64::NEG_INFINITY; // Since the current player is maximizing
+        // --- Parallel Execution (Native) ---
+        #[cfg(not(target_arch = "wasm32"))]
+        let best_move_with_score = all_moves
+            .into_par_iter() // Parallel iterator
+            .map(|move_str| {
+                let mut next_game = game.clone();
+                let moved = if move_str.len() >= 3 {
+                    next_game.add_wall(&move_str, false, false)
+                } else {
+                    next_game.move_pawn(&move_str, false)
+                };
 
-        // Iterate through possible first moves and evaluate them using minimax
-        for move_str in all_moves {
-             let mut next_game = game.clone();
-             let moved = if move_str.len() >= 3 {
-                 next_game.add_wall(&move_str, false, false) // Use internal move for simulation
-             } else {
-                 next_game.move_pawn(&move_str, false)
-             };
-              if !moved { continue; } // Skip if somehow illegal
+                if !moved {
+                    // Assign a very bad score if the move is somehow invalid
+                    (move_str, f64::NEG_INFINITY)
+                } else {
+                    let score = self.minimax_alphabeta(
+                        &next_game,
+                        self.depth - 1,
+                        f64::NEG_INFINITY,
+                        f64::INFINITY,
+                        false, // Next turn is minimizing player
+                    );
+                    (move_str, score)
+                }
+            })
+            .max_by(|(_, score_a), (_, score_b)| {
+                score_a.partial_cmp(score_b).unwrap_or(Ordering::Equal) // Find max score
+            });
 
-             // Call minimax for the opponent's turn (minimizing player)
-             let score = self.minimax_alphabeta(
-                 &next_game,
-                 self.depth - 1, // Decrease depth
-                 f64::NEG_INFINITY,
-                 f64::INFINITY,
-                 false, // The next turn is for the minimizing player
-             );
+        // --- Sequential Execution (WASM or fallback) ---
+        #[cfg(target_arch = "wasm32")]
+        let best_move_with_score = {
+            let mut best_move_seq: Option<String> = None;
+            let mut best_score_seq = f64::NEG_INFINITY;
 
-            if score > best_score {
-                best_score = score;
-                best_move = Some(move_str);
+            for move_str in all_moves {
+                let mut next_game = game.clone();
+                let moved = if move_str.len() >= 3 {
+                    next_game.add_wall(&move_str, false, false)
+                } else {
+                    next_game.move_pawn(&move_str, false)
+                };
+                if !moved { continue; }
+
+                let score = self.minimax_alphabeta(
+                    &next_game,
+                    self.depth - 1,
+                    f64::NEG_INFINITY,
+                    f64::INFINITY,
+                    false,
+                );
+
+                if score > best_score_seq {
+                    best_score_seq = score;
+                    best_move_seq = Some(move_str);
+                }
             }
-        }
-
-        // Fallback if no move could be evaluated (shouldn't happen if all_moves is not empty)
-        if best_move.is_none() && !game.get_legal_moves(current_player).is_empty() {
-            best_move = Some(game.get_legal_moves(current_player)[0].clone())
-        } else if best_move.is_none() && !game.get_legal_walls(current_player).is_empty() {
-             best_move = Some(game.get_legal_walls(current_player)[0].clone())
-        }
+            best_move_seq.map(|mv| (mv, best_score_seq)) // Combine into Option<(String, f64)>
+        };
 
 
-        best_move
+        // Determine the best move from parallel/sequential execution
+        let calculated_best_move = best_move_with_score.map(|(mv, _)| mv);
+
+        // Apply fallback logic if necessary, assigning to the final variable to return
+        let final_best_move = if calculated_best_move.is_some() {
+            calculated_best_move // Use the calculated move if found
+        } else if !game.get_legal_moves(current_player).is_empty() {
+            // Fallback 1: First legal pawn move
+            Some(game.get_legal_moves(current_player)[0].clone())
+        } else if !game.get_legal_walls(current_player).is_empty() {
+            // Fallback 2: First legal wall move
+            Some(game.get_legal_walls(current_player)[0].clone())
+        } else {
+            // Should be unreachable if all_moves wasn't empty, but handle defensively
+            None
+        };
+
+        final_best_move
     }
 }

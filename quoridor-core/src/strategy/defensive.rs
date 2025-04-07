@@ -1,7 +1,7 @@
 // --- File: quoridor-project/quoridor-core/src/strategy/defensive.rs ---
 
 use crate::game::Quoridor;
-use crate::player::Player;
+// use crate::player::Player; // Unused
 use crate::strategy::base::QuoridorStrategy;
 use crate::strategy::{Strategy, ShortestPathStrategy}; // Import base and ShortestPath
 use rand::prelude::*;

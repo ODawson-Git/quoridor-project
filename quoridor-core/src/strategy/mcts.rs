@@ -1,14 +1,19 @@
 // --- File: quoridor-project/quoridor-core/src/strategy/mcts.rs ---
 
-use crate::game::Quoridor;
-use crate::player::Player;
-use crate::strategy::base::QuoridorStrategy;
-use crate::strategy::Strategy;
+use crate::{game::Quoridor, player::Player, strategy::base::QuoridorStrategy, strategy::Strategy};
 use rand::prelude::*;
-use std::cmp::Ordering; // Needed for max_by
-use std::{f64, ptr}; // ptr might not be needed if we avoid raw pointers
+use std::{
+    cmp::Ordering,
+    collections::HashMap,
+    f64, // ptr, // ptr might not be needed if we avoid raw pointers (REMOVED)
+    sync::{Arc, Mutex},
+};
 
-// --- Platform-specific Timer Handling ---
+// --- Platform-specific Timer Handling & Parallelism ---
+// #[cfg(not(target_arch = "wasm32"))] // Removed prelude import, using rayon::scope directly
+// use rayon::prelude::*;
+#[cfg(not(target_arch = "wasm32"))]
+use rayon; // Need the base crate for rayon::scope
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::{Duration, Instant};
 
@@ -33,10 +38,10 @@ mod wasm_utils {
 }
 #[cfg(target_arch = "wasm32")]
 use wasm_utils::WasmSafeInstant;
-// --- End Platform-specific Timer Handling ---
+// --- End Platform-specific Timer Handling & Parallelism ---
 
 // --- MCTS Node ---
-#[derive(Clone)] // Clone needed for game state cloning during simulation
+#[derive(Clone, Debug)] // Added Debug
 struct MCTSNode {
     move_str: String,       // The move that led to this node's state
     player_to_move: Player, // The player whose turn it is *at* this node's state
@@ -57,6 +62,14 @@ impl MCTSNode {
             children: Vec::new(),
             unexpanded_moves: legal_moves,
         }
+    }
+
+    // Helper to get child statistics (move_str, visits) - useful for aggregation
+    fn get_child_stats(&self) -> Vec<(String, usize)> {
+        self.children
+            .iter()
+            .map(|child| (child.move_str.clone(), child.visits))
+            .collect()
     }
 
     /// Calculates the UCT value for selecting this node during the Selection phase.
@@ -98,17 +111,7 @@ impl MCTSNode {
             .map(|(index, _)| index)
     }
 
-    /// Selects the index of the child with the highest visit count (for final move selection).
-    fn select_most_visited_child_index(&self) -> Option<usize> {
-        if self.children.is_empty() {
-            return None;
-        }
-        self.children
-            .iter()
-            .enumerate()
-            .max_by_key(|(_, child)| child.visits)
-            .map(|(index, _)| index)
-    }
+    // Removed unused method: select_most_visited_child_index
 
     /// Adds a new child node after expansion.
     fn add_child(&mut self, move_str: String, player_to_move: Player, legal_moves: Vec<String>) {
@@ -133,20 +136,33 @@ pub struct MCTSStrategy {
     exploration_param: f64, // C value in UCT
     #[cfg(not(target_arch = "wasm32"))]
     time_limit: Option<Duration>,
+    #[cfg(not(target_arch = "wasm32"))]
+    num_threads: usize, // Number of threads for parallel execution
     #[cfg(target_arch = "wasm32")]
     time_limit_iterations: Option<usize>, // Iteration limit proxy for WASM
 }
 
 impl MCTSStrategy {
+    const DEFAULT_SIMULATIONS: usize = 1000;
+    const DEFAULT_EXPLORATION: f64 = 1.414; // sqrt(2)
+    #[cfg(target_arch = "wasm32")]
+    const WASM_ITER_PER_SEC_ESTIMATE: f64 = 50000.0; // Adjust as needed
+
     pub fn new(opening_name: &str, opening_moves: Vec<String>, simulation_limit: usize) -> Self {
-        let sim_limit = if simulation_limit == 0 { 1000 } else { simulation_limit };
+        let sim_limit = if simulation_limit == 0 {
+            Self::DEFAULT_SIMULATIONS
+        } else {
+            simulation_limit
+        };
         let name = format!("MCTS{}", sim_limit); // Base name on sim count
         MCTSStrategy {
             base: QuoridorStrategy::new(&name, opening_name, opening_moves),
             simulation_limit: sim_limit,
-            exploration_param: 1.414_f64, // sqrt(2)
+            exploration_param: Self::DEFAULT_EXPLORATION,
             #[cfg(not(target_arch = "wasm32"))]
             time_limit: None,
+            #[cfg(not(target_arch = "wasm32"))]
+            num_threads: rayon::current_num_threads().max(1), // Default to available threads
             #[cfg(target_arch = "wasm32")]
             time_limit_iterations: None,
         }
@@ -156,9 +172,14 @@ impl MCTSStrategy {
     pub fn with_time_limit(mut self, seconds: f64) -> Self {
         if seconds > 0.0 {
             self.time_limit = Some(Duration::from_secs_f64(seconds));
-            // Optionally update the name stored in base if needed
-            // self.base.name = format!("MCTS{:.1}s", seconds);
+            // Name update handled in name() method
         }
+        self
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn with_num_threads(mut self, threads: usize) -> Self {
+        self.num_threads = threads.max(1); // Ensure at least one thread
         self
     }
 
@@ -166,91 +187,97 @@ impl MCTSStrategy {
     pub fn with_time_limit(mut self, seconds: f64) -> Self {
         if seconds > 0.0 {
             // Crude approximation: iterations = time * simulations_per_second_estimate
-            let iterations = (seconds * 50000.0).max(1000.0) as usize; // Example factor
+            let iterations = (seconds * Self::WASM_ITER_PER_SEC_ESTIMATE)
+                .max(Self::DEFAULT_SIMULATIONS as f64) as usize;
             self.time_limit_iterations = Some(iterations);
-            // Optionally update the name stored in base
-            // self.base.name = format!("MCTS~{:.1}s", seconds);
+            // Name update handled in name() method
         }
         self
     }
 
-    /// Runs the MCTS search for the best move from the given game state.
-    fn run_search(&self, game: &Quoridor) -> String {
+    /// Runs a batch of MCTS simulations starting from a given root node and game state.
+    /// Returns the statistics (move, visits) of the children of the root node after the simulations.
+    /// This function contains the core MCTS loop (Select, Expand, Simulate, Backprop).
+    fn run_mcts_simulation_batch(
+        &self,
+        initial_game: &Quoridor,
+        simulations_to_run: usize,
+        #[cfg(not(target_arch = "wasm32"))] time_limit_for_batch: Option<Duration>,
+        #[cfg(target_arch = "wasm32")] iteration_limit_for_batch: Option<usize>,
+    ) -> Vec<(String, usize)> {
         let mut rng = thread_rng();
-        let root_player = game.active_player; // Player whose turn it is at the root
+        let root_player = initial_game.active_player;
 
-        // Get initial legal moves
-        let legal_pawn = game.get_legal_moves(root_player);
-        let legal_walls = game.get_legal_walls(root_player);
-        let root_moves: Vec<String> = legal_pawn.into_iter().chain(legal_walls.into_iter()).collect();
+        let legal_pawn = initial_game.get_legal_moves(root_player);
+        let legal_walls = initial_game.get_legal_walls(root_player);
+        let root_moves: Vec<String> = legal_pawn
+            .into_iter()
+            .chain(legal_walls.into_iter())
+            .collect();
 
-        if root_moves.is_empty() { return "resign".to_string(); }
-        if root_moves.len() == 1 { return root_moves[0].clone(); }
+        // If no moves or only one move, no search needed for this batch
+        if root_moves.is_empty() {
+            return vec![("resign".to_string(), 1)];
+        } // Return dummy stats
+        if root_moves.len() == 1 {
+            return vec![(root_moves[0].clone(), 1)];
+        } // Return dummy stats
 
-        // Create the root node representing the current state
-        let mut root_node = MCTSNode::new(
-            "root".to_string(),
-            root_player, // It's this player's turn to move from the root state
-            root_moves.clone(),
-        );
+        let mut root_node = MCTSNode::new("root".to_string(), root_player, root_moves.clone());
 
-        let mut simulations_run = 0;
+        let mut simulations_run_in_batch = 0;
         #[cfg(not(target_arch = "wasm32"))]
         let start_time = Instant::now();
         #[cfg(target_arch = "wasm32")]
-        let mut wasm_timer = WasmSafeInstant::now(); // Initialize timer proxy
+        let mut wasm_timer = WasmSafeInstant::now();
 
-        // --- Main MCTS Loop ---
+        // --- MCTS Loop for this Batch ---
         loop {
-            // --- Termination Check ---
-            simulations_run += 1;
-            // Use simulation limit primarily
-            if simulations_run > self.simulation_limit { break; }
+            // --- Termination Check for Batch ---
+            simulations_run_in_batch += 1;
+            if simulations_run_in_batch > simulations_to_run {
+                break;
+            }
 
-            // Check time limit secondarily (if applicable)
             #[cfg(not(target_arch = "wasm32"))]
-            if let Some(limit) = self.time_limit {
-                if start_time.elapsed() >= limit { break; }
+            if let Some(limit) = time_limit_for_batch {
+                if start_time.elapsed() >= limit {
+                    break;
+                }
             }
             #[cfg(target_arch = "wasm32")]
-            if let Some(iter_limit) = self.time_limit_iterations {
-                 // Use the elapsed() method which increments the counter
-                if wasm_timer.elapsed() >= iter_limit { break; }
+            if let Some(iter_limit) = iteration_limit_for_batch {
+                if wasm_timer.elapsed() >= iter_limit {
+                    break;
+                }
             }
             // --- End Termination Check ---
 
-
-            let mut current_game_sim = game.clone(); // Clone state for this simulation run
+            let mut current_game_sim = initial_game.clone(); // Clone state for this simulation run
             let mut path: Vec<*mut MCTSNode> = vec![&mut root_node]; // Path of *mutable* pointers
 
-
             // --- 1. Selection ---
-            // Traverse the tree using UCT until a leaf or unexpanded node is found
-             loop {
+            // (Selection logic remains the same as original)
+            loop {
                 let current_node_ptr = *path.last().unwrap();
                 let current_node = unsafe { &*current_node_ptr }; // Immutable borrow for checks
 
                 if !current_node.unexpanded_moves.is_empty() || current_node.children.is_empty() {
-                    // Node is expandable or a leaf node - stop selection
-                    break;
+                    break; // Node is expandable or a leaf node
                 }
-                 if self.is_terminal(&current_game_sim) {
-                     // Reached terminal state during selection
-                      break;
-                 }
+                if self.is_terminal(&current_game_sim) {
+                    break; // Reached terminal state during selection
+                }
 
-                // Select the best child using UCT
-                 let Some(best_child_idx) = current_node.select_best_child_index(self.exploration_param) else {
-                     // Should not happen if children is not empty, but handle defensively
-                      break;
-                 };
+                let Some(best_child_idx) = current_node.select_best_child_index(self.exploration_param) else {
+                    break; // Should not happen if children is not empty
+                };
 
-                 // Get mutable reference to the chosen child and add to path
-                let next_node_ptr = unsafe { &mut (*current_node_ptr).children[best_child_idx] as *mut MCTSNode };
+                let next_node_ptr =
+                    unsafe { &mut (*current_node_ptr).children[best_child_idx] as *mut MCTSNode };
                 path.push(next_node_ptr);
 
-                // Apply the child's move to the simulation game state
-                let move_str = &unsafe { &*next_node_ptr }.move_str; // Borrow immutably
+                let move_str = &unsafe { &*next_node_ptr }.move_str;
                 let move_applied = if move_str.len() >= 3 {
                     current_game_sim.add_wall(move_str, false, true)
                 } else {
@@ -258,84 +285,177 @@ impl MCTSStrategy {
                 };
 
                 if !move_applied {
-                    eprintln!("MCTS Error: Failed to apply selected move {} during selection.", move_str);
-                    // Backtrack or stop simulation? For now, stop this iteration.
-                    break; // Exit inner loop, simulation will proceed from previous state
+                    eprintln!(
+                        "MCTS Error: Failed to apply selected move {} during selection.",
+                        move_str
+                    );
+                    break;
                 }
             } // End Selection loop
 
             // --- 2. Expansion ---
-             let expandable_node_ptr = *path.last().unwrap();
-             let expandable_node = unsafe { &mut *expandable_node_ptr };
+            // (Expansion logic remains the same as original)
+            let expandable_node_ptr = *path.last().unwrap();
+            let expandable_node = unsafe { &mut *expandable_node_ptr };
 
-              // Expand if the node is not terminal and has untried moves
-              if !self.is_terminal(&current_game_sim) && !expandable_node.unexpanded_moves.is_empty() {
-                  let move_to_expand = expandable_node.unexpanded_moves.remove(rng.gen_range(0..expandable_node.unexpanded_moves.len()));
-                   let player_after_expansion = current_game_sim.active_player; // Player *before* applying expansion move
+            if !self.is_terminal(&current_game_sim) && !expandable_node.unexpanded_moves.is_empty()
+            {
+                let move_to_expand = expandable_node
+                    .unexpanded_moves
+                    .remove(rng.gen_range(0..expandable_node.unexpanded_moves.len()));
+                // let player_after_expansion = current_game_sim.active_player; // Not needed directly
 
-                   // Apply the expansion move
-                    let move_applied = if move_to_expand.len() >= 3 {
-                        current_game_sim.add_wall(&move_to_expand, false, true)
+                let move_applied = if move_to_expand.len() >= 3 {
+                    current_game_sim.add_wall(&move_to_expand, false, true)
+                } else {
+                    current_game_sim.move_pawn(&move_to_expand, true)
+                };
+
+                if move_applied {
+                    let new_node_player = current_game_sim.active_player;
+                    let child_moves = if self.is_terminal(&current_game_sim) {
+                        Vec::new()
                     } else {
-                        current_game_sim.move_pawn(&move_to_expand, true)
+                        let p = current_game_sim.get_legal_moves(new_node_player);
+                        let w = current_game_sim.get_legal_walls(new_node_player);
+                        p.into_iter().chain(w.into_iter()).collect()
                     };
 
-                    if move_applied {
-                          // Get legal moves for the *new* state
-                          let new_node_player = current_game_sim.active_player; // Player whose turn it is now
-                         let child_moves = if self.is_terminal(&current_game_sim) {
-                              Vec::new()
-                          } else {
-                              let p = current_game_sim.get_legal_moves(new_node_player);
-                              let w = current_game_sim.get_legal_walls(new_node_player);
-                              p.into_iter().chain(w.into_iter()).collect()
-                          };
-
-                          // Add the new child node
-                           expandable_node.add_child(move_to_expand, new_node_player, child_moves);
-                          let new_child_ptr = expandable_node.children.last_mut().unwrap() as *mut MCTSNode;
-                          path.push(new_child_ptr); // Add expanded node to path for backpropagation
-                    } else {
-                         // If expansion move failed, just simulate from the current state
-                         // This might happen if get_legal_moves had an issue earlier
-                          eprintln!("MCTS Warning: Failed to apply expansion move {}. Simulating from parent.", move_to_expand);
-                    }
-              }
-
-
-            // --- 3. Simulation ---
-            // Simulate from the state reached at the end of selection/expansion
-             let winner: Option<Player> = self.simulate_random_playout(&mut current_game_sim);
-
-            // --- 4. Backpropagation ---
-            // Update nodes along the path with the simulation result
-            for node_ptr in path.iter().rev() { // Iterate backwards from leaf to root
-                 let node = unsafe { &mut **node_ptr };
-                  // The score should be relative to the player whose turn it was *at this node*
-                  let score = match winner {
-                      Some(winning_player) if winning_player == node.player_to_move => 10.0, // Win
-                      Some(_) => 0.0, // Loss
-                      None => 5.0, // Draw
-                  };
-                  node.update(score);
+                    expandable_node.add_child(move_to_expand.clone(), new_node_player, child_moves);
+                    let new_child_ptr =
+                        expandable_node.children.last_mut().unwrap() as *mut MCTSNode;
+                    path.push(new_child_ptr);
+                } else {
+                    eprintln!(
+                        "MCTS Warning: Failed to apply expansion move {}. Simulating from parent.",
+                        move_to_expand
+                    );
+                }
             }
 
-        } // End MCTS loop
+            // --- 3. Simulation ---
+            // (Simulation logic remains the same as original)
+            let winner: Option<Player> = self.simulate_random_playout(&mut current_game_sim);
 
-        // --- Select Final Move ---
-         if let Some(best_child_idx) = root_node.select_most_visited_child_index() {
-             // Defensive check: ensure index is valid
-              if best_child_idx < root_node.children.len() {
-                  root_node.children[best_child_idx].move_str.clone()
-              } else {
-                  // Fallback if index is somehow out of bounds
-                  eprintln!("MCTS Warning: Best child index out of bounds.");
-                   root_moves.choose(&mut rng).cloned().unwrap_or_else(|| "resign".to_string())
-              }
-         } else {
-             // Fallback if root has no children explored (should only happen if error or 1 move)
-              root_moves.choose(&mut rng).cloned().unwrap_or_else(|| "resign".to_string())
-         }
+            // --- 4. Backpropagation ---
+            // (Backpropagation logic remains the same as original)
+            for node_ptr in path.iter().rev() {
+                let node = unsafe { &mut **node_ptr };
+                let score = match winner {
+                    Some(winning_player) if winning_player == node.player_to_move => 10.0, // Win
+                    Some(_) => 0.0,                                                      // Loss
+                    None => 5.0,                                                         // Draw
+                };
+                node.update(score);
+            }
+        } // End MCTS loop for this batch
+
+        // Return the statistics of the root's children for aggregation
+        root_node.get_child_stats()
+    }
+
+    /// Runs the MCTS search for the best move from the given game state.
+    /// Uses parallel execution if not compiled for WASM.
+    fn run_search(&self, game: &Quoridor) -> String {
+        let mut rng = thread_rng();
+        let root_player = game.active_player;
+
+        // Get initial legal moves
+        let legal_pawn = game.get_legal_moves(root_player);
+        let legal_walls = game.get_legal_walls(root_player);
+        let root_moves: Vec<String> = legal_pawn
+            .into_iter()
+            .chain(legal_walls.into_iter())
+            .collect();
+
+        if root_moves.is_empty() {
+            return "resign".to_string();
+        }
+        if root_moves.len() == 1 {
+            return root_moves[0].clone();
+        }
+
+        // --- Parallel Execution (Native) ---
+        #[cfg(not(target_arch = "wasm32"))]
+        let best_move = {
+            let num_threads = self.num_threads;
+            let total_simulations = self.simulation_limit;
+            let sims_per_thread = (total_simulations as f64 / num_threads as f64).ceil() as usize;
+
+            // Calculate time limit per thread if a total time limit is set
+            let time_limit_per_thread = self.time_limit.map(|limit| {
+                // Divide time, but ensure a minimum duration to avoid instant timeouts
+                let duration_per_thread = limit.as_secs_f64() / num_threads as f64;
+                Duration::from_secs_f64(duration_per_thread.max(0.01)) // Min 10ms
+            });
+
+            // Use Arc<Mutex<...>> for thread-safe aggregation of results
+            let aggregated_visits: Arc<Mutex<HashMap<String, usize>>> =
+                Arc::new(Mutex::new(HashMap::new()));
+
+            // Use rayon::scope for structured concurrency
+            rayon::scope(|s| {
+                for _ in 0..num_threads {
+                    let game_clone = game.clone(); // Clone game state for each thread
+                    let aggregated_visits_clone = Arc::clone(&aggregated_visits);
+
+                    s.spawn(move |_| {
+                        // Run an independent MCTS batch in this thread
+                        let batch_results = self.run_mcts_simulation_batch(
+                            &game_clone,
+                            sims_per_thread,
+                            time_limit_per_thread, // Pass the calculated per-thread time limit
+                        );
+
+                        // Lock the mutex and aggregate results
+                        let mut visits_map = aggregated_visits_clone.lock().unwrap();
+                        for (mv, visits) in batch_results {
+                            *visits_map.entry(mv).or_insert(0) += visits;
+                        }
+                    });
+                }
+            }); // Scope automatically waits for all spawned tasks
+
+            // Find the best move from aggregated results
+            let final_visits = aggregated_visits.lock().unwrap();
+            final_visits
+                .iter()
+                .max_by_key(|&(_, visits)| visits)
+                .map(|(mv, _)| mv.clone())
+                .unwrap_or_else(|| {
+                    eprintln!("MCTS Warning: No moves found after parallel aggregation.");
+                    root_moves
+                        .choose(&mut rng)
+                        .cloned()
+                        .unwrap_or_else(|| "resign".to_string())
+                })
+        };
+
+        // --- Sequential Execution (WASM or fallback) ---
+        #[cfg(target_arch = "wasm32")]
+        let best_move = {
+            // Run a single batch with the total simulation/iteration limit
+            let results = self.run_mcts_simulation_batch(
+                game,
+                self.simulation_limit,
+                self.time_limit_iterations, // Pass iteration limit for WASM
+            );
+
+            // Find the best move from the single batch result
+            results
+                .iter()
+                .max_by_key(|&(_, visits)| visits)
+                .map(|(mv, _)| mv.clone())
+                .unwrap_or_else(|| {
+                    eprintln!("MCTS Warning: No moves found after sequential run.");
+                    root_moves
+                        .choose(&mut rng)
+                        .cloned()
+                        .unwrap_or_else(|| "resign".to_string())
+                })
+        };
+
+        best_move
     }
 
     /// Checks if the game state is terminal (win).
@@ -355,7 +475,7 @@ impl MCTSStrategy {
      fn simulate_random_playout(&self, game_state: &mut Quoridor) -> Option<Player> {
          // No need to clone again if we modify the state passed from run_search directly
          // let mut current_game = game_state.clone();
-         let mut current_game = game_state; // Modify the passed mutable state
+         let current_game = game_state; // Modify the passed mutable state (made immutable as it's not reassigned)
          let mut rng = thread_rng();
          let max_sim_moves = 150; // Limit simulation length
 
@@ -423,20 +543,32 @@ impl MCTSStrategy {
 
 impl Strategy for MCTSStrategy {
     fn name(&self) -> String {
-        // Provide a name reflecting configuration
-        let mut name = format!("MCTS{}", self.simulation_limit);
-         #[cfg(not(target_arch = "wasm32"))]
-         if let Some(limit) = self.time_limit {
-              name = format!("MCTS{:.1}s", limit.as_secs_f64());
-         }
-         #[cfg(target_arch = "wasm32")]
-         if let Some(iter_limit) = self.time_limit_iterations {
-              let approx_secs = iter_limit as f64 / 50000.0; // Example factor
-              name = format!("MCTS~{:.1}s({}i)", approx_secs, iter_limit);
-         }
-         // Append opening name if one was used
-         // format!("{} ({})", name, self.base.opening_name) // Access base struct field? Need pub
-         name // Return combined name
+        // The base name already includes opening info if applicable, constructed in base::new.
+        let base_name = self.base.name.clone();
+
+        // Append parallel execution info if relevant and not already part of the base name logic
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            // Check if time limit is used, as base::new might not include thread count then.
+            // A more robust approach might involve parsing the base_name or storing config separately.
+            // For now, let's assume if num_threads > 1, we append it.
+            if self.num_threads > 1 {
+                 // Avoid appending if base_name already seems to include 'xN' (simple check)
+                 if !base_name.contains(&format!("x{}", self.num_threads)) {
+                    format!("{} x{}", base_name, self.num_threads)
+                 } else {
+                     base_name
+                 }
+            } else {
+                base_name // No change if single-threaded
+            }
+        }
+
+        // For WASM, just return the base name constructed initially.
+        #[cfg(target_arch = "wasm32")]
+        {
+            base_name
+        }
     }
 
     fn choose_move(&mut self, game: &Quoridor) -> Option<String> {

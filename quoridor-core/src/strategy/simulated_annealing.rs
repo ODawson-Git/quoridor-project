@@ -9,21 +9,30 @@ use std::f64;
 
 pub struct SimulatedAnnealingStrategy {
     base: QuoridorStrategy,
-    // Parameters can be added here, e.g., iteration count, cooling schedule
-    // For simplicity, using fixed iterations based on paper's context
     max_global_iterations: usize,
     max_local_iterations: usize,
 }
 
+// Define different iteration limits based on the target architecture
+#[cfg(not(target_arch = "wasm32"))]
+const DEFAULT_GLOBAL_ITERATIONS: usize = 500;
+#[cfg(not(target_arch = "wasm32"))]
+const DEFAULT_LOCAL_ITERATIONS: usize = 500;
+
+#[cfg(target_arch = "wasm32")]
+const DEFAULT_GLOBAL_ITERATIONS: usize = 50; // Significantly reduced for WASM
+#[cfg(target_arch = "wasm32")]
+const DEFAULT_LOCAL_ITERATIONS: usize = 50;  // Significantly reduced for WASM
+
+
 impl SimulatedAnnealingStrategy {
      pub fn new(opening_name: &str, opening_moves: Vec<String>, _time_factor: f64) -> Self {
-          // The time_factor isn't directly used in the paper's SA logic description,
-          // but we could use it to scale iterations if desired.
-          // Paper implies a large number of iterations are run until a condition is met.
+          // The time_factor isn't directly used here but could scale the defaults.
+          // Use the architecture-specific defaults.
           SimulatedAnnealingStrategy {
                base: QuoridorStrategy::new("SimulatedAnnealing", opening_name, opening_moves), // Name doesn't include factor for now
-               max_global_iterations: 500, // Example: Limit iterations for performance
-               max_local_iterations: 500,  // Example: Limit iterations
+               max_global_iterations: DEFAULT_GLOBAL_ITERATIONS,
+               max_local_iterations: DEFAULT_LOCAL_ITERATIONS,
           }
      }
 
@@ -93,9 +102,9 @@ impl Strategy for SimulatedAnnealingStrategy {
         }
 
         let player = game.active_player; // The player making the decision *now*
-        let opponent = player.opponent();
+        // let opponent = player.opponent(); // Unused
         let mut rng = thread_rng();
-        let e = f64::consts::E;
+        // let e = f64::consts::E; // Unused (math `exp()` is used directly)
 
         let initial_score = self.evaluate_position(game); // Evaluate current state
         let mut best_overall_move: Option<String> = None; // Best first move found

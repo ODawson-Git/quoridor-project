@@ -4,7 +4,7 @@
 
 use crate::types::Coord;
 use crate::player::Player;
-use crate::Quoridor; // Access Quoridor struct methods
+// Removed: use crate::Quoridor; // Access Quoridor struct methods (unused)
 use std::collections::HashMap;
 use petgraph::graph::{NodeIndex, UnGraph};
 use petgraph::algo::{dijkstra, has_path_connecting};

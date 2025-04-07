@@ -6,7 +6,7 @@ use petgraph::algo::dijkstra;
 use crate::types::Coord;
 use crate::player::Player;
 use crate::utils::{algebraic_to_coord, coord_to_algebraic};
-use crate::graph::{self, initialize_board_graph, get_blocked_edges_by_wall, check_wall_path_blocking, get_shortest_path_len}; // Use graph module
+use crate::graph::{initialize_board_graph, get_blocked_edges_by_wall, check_wall_path_blocking, get_shortest_path_len}; // Use graph module
 
 use std::collections::{HashMap, HashSet};
 use petgraph::graph::{NodeIndex, UnGraph};

@@ -18,6 +18,9 @@ petgraph = "0.6.4" # Use a specific recent version
 # Random number generation for strategies like Random, MCTS, SA
 rand = "0.8.5"
 
+# Parallel iteration library (for MCTS/Minimax optimization)
+rayon = "1.8.1" # Use a specific recent version
+
 # Optional dependencies can be added here as needed
 # e.g., serde for serialization if you plan to save/load game states
 # serde = { version = "1.0", features = ["derive"], optional = true }

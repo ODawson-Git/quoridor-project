@@ -5,7 +5,7 @@ use crate::player::Player;
 use crate::types::Coord;
 use crate::strategy::base::QuoridorStrategy;
 use crate::strategy::{Strategy, AdaptiveStrategy}; // Using Adaptive as a fallback
-use crate::utils::abs_diff;
+// use crate::utils::abs_diff; // Unused
 use std::collections::HashSet;
 
 pub struct MirrorStrategy {
@@ -64,8 +64,9 @@ impl MirrorStrategy {
             }
             // Now we know it's a pawn move
             let move_coord = game.algebraic_to_coord(move_str.as_str()); // Explicitly use &str
-            let dist_sq = ((move_coord.0 as f64 - target_coord.0 as f64).powi(2) +
-                           (move_coord.1 as f64 - target_coord.1 as f64).powi(2));
+            // Remove unnecessary parentheses
+            let dist_sq = (move_coord.0 as f64 - target_coord.0 as f64).powi(2) +
+                           (move_coord.1 as f64 - target_coord.1 as f64).powi(2);
 
             // Simple Manhattan distance might be sufficient too:
             // let dist_manhattan = abs_diff(move_coord.0, target_coord.0) + abs_diff(move_coord.1, target_coord.1);

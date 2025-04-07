@@ -1,7 +1,7 @@
 // --- File: quoridor-project/quoridor-core/src/strategy/shortest_path.rs ---
 
 use crate::game::Quoridor;
-use crate::player::Player;
+// use crate::player::Player; // Unused
 use crate::strategy::base::QuoridorStrategy;
 use crate::strategy::Strategy;
 
