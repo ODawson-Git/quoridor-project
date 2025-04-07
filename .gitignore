@@ -30,6 +30,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# Analysis outputs (optional, keep if you want to track them)
-# analysis_outputs/
-# tournament_outputs/
+# Analysis outputs
+analysis_outputs/
+tournament_outputs/
