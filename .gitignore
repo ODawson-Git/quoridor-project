@@ -1,0 +1,35 @@
+# Rust / Cargo
+target/
+Cargo.lock
+
+# Node / npm / Vite
+node_modules/
+web-ui/node_modules/
+web-ui/dist/
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm
+.pnpm-store
+
+# WASM (wasm-pack output)
+quoridor-wasm/pkg/
+quoridor-wasm/target/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Analysis outputs (optional, keep if you want to track them)
+# analysis_outputs/
+# tournament_outputs/

@@ -108,6 +108,8 @@ To run the web interface:
    ```
 5. Access the UI at http://localhost:5173/
 
+**Live Deployment:** A live version of the Web UI is deployed via GitHub Pages at: [https://odawson-git.github.io/quoridor-project/](https://odawson-git.github.io/quoridor-project/)
+
 ### Tournament Runner
 
 To run AI tournaments:
