@@ -5,7 +5,7 @@ import { resolve } from 'path'
 export default defineConfig({
   plugins: [react()],
   // Add base path - use the name of your repository
-  base: '/quoridor-game/',
+  base: '/quoridor-project/',
   server: {
     fs: {
       allow: ['..']
